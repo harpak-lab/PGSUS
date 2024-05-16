@@ -15,7 +15,7 @@ from scipy.stats import pearsonr
 import matplotlib as mpl
 warnings.filterwarnings('ignore')
 
-class stratification_comparisons(object):
+class stratification_comparison(object):
 
 	def __init__(self, analyses, label_dict):
 
