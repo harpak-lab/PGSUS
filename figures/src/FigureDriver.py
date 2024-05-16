@@ -15,11 +15,13 @@ from scipy.stats import pearsonr
 import matplotlib as mpl
 warnings.filterwarnings('ignore')
 
+#load classes from other scripts
 from alphapillars import alphapillars
 from mainfigs import main_figures
 from method_scatters import method_scatters
 from decomps import decomps
-from stratification_comparisons import stratification_comparisons
+from stratification_comparison import stratification_comparison
+from trait_component_tables import trait_components
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f','--figures',type=str,help='figures to make')
@@ -94,3 +96,9 @@ if 'supp' in figset:
 	if 'decomps' in figures:
 		plots = decomps(analyses, label_dict)
 		plots.run()
+
+	if 'trait_components' in figures:
+		plots = trait_components(analyses,label_dict,sps_traits)
+		plots.run()
+
+
