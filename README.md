@@ -1,4 +1,6 @@
-# SAD Variance Estimation Software
+# PGSUS software for the estimation of SAD variance in a polygenic score
 
-This is a description of the code developed to estimate SAD variance in polygenic scores in Pattillo Smith et al. 2024. 
+The Partitioning Genetic Scores Using Siblings (PGSUS, pron. "Pegasus") method was developed to decompose the variance of a polygenic score (PGS) into its different sources of variation. Namely, the PGSUS method uses paried population level GWAS statistics and sibling GWAS statistics to identify the proportion of variance in a PGS due to direct effects and variance due to Stratification, Assortative mating, and indirect parental (Dynastic) effects or ``SAD effects''. The PGSUS method is written in Python and run in conda environment described and discussed below. Notably, application of PGSUS helps in the identification and interpretation of the performance of a PGS with respect to a particlar target cohort. It achieves this through a two-step decomposition of variance in a PGS that is due to SAD effects that is shared across all of the PCs of the genotype matrix of the prediction sample and the SAD variance that is correlated with a particular axis of stratification, as captured by the prediction sample PCs.
 
+## Directory Contents
+In addition to the files below, files of LD scores, cis-interaction LD scores, and GWAS summary statistics used for our analysis of the UK Biobank and BioBank Japan can be downloaded from the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/W6MA8J&faces-redirect=true). Please be aware that these files are quiet large and will take time to download completely. 
