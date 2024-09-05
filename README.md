@@ -9,3 +9,14 @@ In addition to the files below, files containing the summary statistics, preproc
 
 `src` contains the Python implementation of the PGSUS method to analyze a PGS of interest. Further descriptions of the scrips, flags, and inputs can be found within this directory. 
 
+## Formatting of summary statistics
+The first step in applying PGSUS is formatting the standard and sibling GWAS summary statistics properly. This is achieved using the `munge_sumstats.py` script and the follwoing set of flags. In addition, ** please be sure to download the necessary support files ** from the link above. An example command, and enumeration of each flag can be seen below. 
+
+```python 
+python pgsus.py --h2 sumstats/Height_norm.hapmap.1kg.sumstats.gz
+--ref-ld-chr cisinteraction_scores/
+--w-ld-chr weight_hm3_no_hla/
+--out UKB.Triglyceride
+--print-coefficients
+ ```
+
