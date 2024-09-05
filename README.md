@@ -7,16 +7,19 @@ In addition to the files below, files containing the summary statistics, preproc
 
 `simulations` contains the scripts used to generate simulated summary statistics and perform the PGSUS decomposition while varying parameters of interst. Further discussion of the implementation and different flags can be found in this directory. 
 
-`src` contains the Python implementation of the PGSUS method to analyze a PGS of interest. Further descriptions of the scrips, flags, and inputs can be found within this directory. 
-
 ## Formatting of summary statistics
 The first step in applying PGSUS is formatting the standard and sibling GWAS summary statistics properly. This is achieved using the `munge_sumstats.py` script and the follwoing set of flags. In addition, **please be sure to download the necessary support files** from the link above. An example command, and enumeration of each flag can be seen below. 
 
 ```python 
-python pgsus.py --h2 sumstats/Height_norm.hapmap.1kg.sumstats.gz
---ref-ld-chr cisinteraction_scores/
---w-ld-chr weight_hm3_no_hla/
---out UKB.Triglyceride
---print-coefficients
+python munge_sumstats.py --pop-gwas-file standard_gwas_height.linear.gz
+--sib-perm-file sibling_gwas_height.txt.gz
+--preselected-snps index_snps.txt
+--outdir myresults/
+--outlabel pgsus_height_decomposition
+--chr CHR
+--snp-id ID
  ```
+
+`--pop-gwas-file` 
+
 
