@@ -1,14 +1,16 @@
-# PGSUS software for the estimation of SAD variance in a polygenic score
+# PGSUS Software for Estimating SAD Variance in a Polygenic Score
 
-The Partitioning Genetic Scores Using Siblings (PGSUS, pron. "Pegasus") method was developed to decompose the variance of a polygenic score (PGS) into its different sources of variation. Namely, the PGSUS method uses paired population level GWAS statistics and sibling GWAS statistics to identify the proportion of variance in a PGS due to direct effects and variance due to Stratification, Assortative mating, and indirect parental (Dynastic) effects or "SAD effects". The PGSUS method is written in Python and run in conda environment described and discussed below. Notably, application of PGSUS helps in the identification and interpretation of the performance of a PGS with respect to a particlar target cohort. It achieves this through a two-step decomposition of variance in a PGS that is due to SAD effects that is shared across all of the PCs of the genotype matrix of the prediction sample and the SAD variance that is correlated with a particular axis of stratification, as captured by the prediction sample PCs.
+The Partitioning Genetic Scores Using Siblings (PGSUS, pronounced "Pegasus") method decomposes the variance of a polygenic score (PGS) into its various sources. Specifically, PGSUS uses paired population-level GWAS statistics and sibling GWAS statistics to determine the proportion of variance in a PGS attributable to direct effects and to Stratification, Assortative Mating, and Indirect Parental (Dynastic) effects, collectively referred to as "SAD effects." PGSUS is implemented in Python and runs in a conda environment. Applying PGSUS helps identify and interpret the performance of a PGS with respect to a particular target cohort by performing a two-step decomposition of variance in a PGS.
 
 ## Directory Contents
-In addition to the files below, files containing the summary statistics, preprocessing steps, and actual commands for each analysis can be found on the [Harpak Lab Website Data Tab](https://www.harpaklab.com/data). 
 
-`simulations` contains the scripts used to generate simulated summary statistics and perform the PGSUS decomposition while varying parameters of interst. Further discussion of the implementation and different flags can be found in this directory. 
+In addition to the files listed below, you can find files containing summary statistics, preprocessing steps, and actual commands for each analysis on the [Harpak Lab Website Data Tab](https://www.harpaklab.com/data).
 
-## Formatting of summary statistics
-The first step in applying PGSUS is formatting the standard and sibling GWAS summary statistics properly. This is achieved using the `munge_sumstats.py` script and the follwoing set of flags. In addition, **please be sure to download the necessary support files** from the link above. An example command where the index variants are already known and enumeration of each flag can be seen below. 
+- `simulations`: Contains scripts to generate simulated summary statistics and perform the PGSUS decomposition while varying parameters of interest. Detailed discussion of implementation and different flags can be found in this directory.
+
+## Formatting Summary Statistics
+
+The first step in applying PGSUS is properly formatting the standard and sibling GWAS summary statistics. Use the `munge_sumstats.py` script with the following flags. **Please download the necessary support files** from the link above.
 
 ```python 
 python munge_sumstats.py --pop-gwas-file standard_gwas_height.linear.gz
@@ -80,9 +82,9 @@ python pgsus.py --genetic-file 1KG.data.bed
 
 `--genetic-file` the plink formatted gentoype file for the prediction sample. This should contain the same SNPs that are in the ".preproc.txt" files. If not, the overlap will be found. 
 
-`--pop-gwas-file` the preprocessed file containing the population GWAS summary statistics. 
+-`--pop-gwas-file` the preprocessed file containing the population GWAS summary statistics. 
 
-`--sib-gwas-file` the preprocessed file containing the sibling GWAS summary statistics. 
+-`--sib-gwas-file` the preprocessed file containing the sibling GWAS summary statistics. 
 
 `--pvalue` the label of the column containing the population GWAS association pvalues in the `pop-gwas-file`. 
 
@@ -118,3 +120,15 @@ python pgsus.py --genetic-file 1KG.data.bed
 
 `--out` directory path where results should be written. 
 
+
+
+
+### Example Command
+
+```bash
+python munge_sumstats.py --pop-gwas-file standard_gwas_height.linear.gz \
+--sib-perm-file sibling_gwas_height.txt.gz \
+--preselected-snps index_snps.txt \
+--outdir myresults/ \
+--outlabel pgsus_height_decomposition \
+--snp-id ID
