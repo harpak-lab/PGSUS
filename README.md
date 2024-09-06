@@ -16,21 +16,24 @@ python munge_sumstats.py --pop-gwas-file standard_gwas_height.linear.gz
 --preselected-snps index_snps.txt
 --outdir myresults/
 --outlabel pgsus_height_decomposition
---chr CHR
 --snp-id ID
  ```
-
-`--pop-gwas-file` an output file for a population GWAS. In this example, a compressed file from [plink](https://www.cog-genomics.org/plink/1.9/assoc#linear)'s implementation is used. 
+The possible 
+```python 
+--pop-gwas-file
+``` a file containing summary statistics from a population GWAS. In this example, a compressed file from [plink](https://www.cog-genomics.org/plink/1.9/assoc#linear)'s implementation is used. 
+`--sib-perm-file` a file containing summary statistics from a sibling GWAS. 
+`--outdir` directory path where results should be written. 
+`--outlabel` file prefix for output files produced during the data munging. 
+`--snp-id` label of then column containing SNP IDs formatted as chromsome:basepair. Defaults to "SNP". 
+`--chr` label of the column containing the chromosome of each SNP. Default is "CHR". 
 
 
 parser.add_argument("--bfile", type=str, default = 'support_files/eur_1000G.noduplicates.maf01.snpsonly', dest = 'genetic_file')
 parser.add_argument("--anc-data", type=str, default = 'support_files/SNPalleles_1000Genomes_allsites.txt.gz', dest = 'ancdata')
-parser.add_argument("--sib-perm-file", type=str, default = './', dest = 'sibgwasperm')
 parser.add_argument("--chr", type=str, default = 'CHR', dest = 'chrom')
 parser.add_argument("--pos", type=str, default = 'POS', dest = 'pos')
 parser.add_argument("--snp-id", type=str, default = 'SNP', dest = 'snpid')
-parser.add_argument('--outdir', type = str, dest = 'outdir')
-parser.add_argument('--outlabel', type = str, dest = 'outlabel', default = '')
 parser.add_argument('--standard-beta', type = str, dest = 'standard_beta', default = 'BETA')
 parser.add_argument('--sib-beta', type = str, dest = 'sib_beta', default = 'BETA')
 parser.add_argument('--trait', type = str, dest = 'trait')
