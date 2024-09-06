@@ -18,32 +18,44 @@ python munge_sumstats.py --pop-gwas-file standard_gwas_height.linear.gz
 --outlabel pgsus_height_decomposition
 --snp-id ID
  ```
-The possible 
-```python 
---pop-gwas-file
-```
-a file containing summary statistics from a population GWAS. In this example, a compressed file from [plink](https://www.cog-genomics.org/plink/1.9/assoc#linear)'s implementation is used. 
+
+The possible flags that can be used to munge different input file formats are enumerated below:
+`--pop-gwas-file` a file containing summary statistics from a population GWAS. In this example, a compressed file from [plink](https://www.cog-genomics.org/plink/1.9/assoc#linear)'s implementation is used. 
+
 `--sib-perm-file` a file containing summary statistics from a sibling GWAS. 
+
+`--preselected-snps` a file with a single column containing the set of SNP IDs to be used in the PGSUS decomposition.
+
 `--outdir` directory path where results should be written. 
+
 `--outlabel` file prefix for output files produced during the data munging. 
+
 `--snp-id` label of then column containing SNP IDs formatted as chromsome:basepair. Defaults to "SNP". 
+
 `--chr` label of the column containing the chromosome of each SNP. Default is "CHR". 
 
+`--bfile` path to the plink formatted bed file with the target sample. Only required if the clumping of the loci has not been previously been performed and identified with the preselected SNPs flag.
 
-parser.add_argument("--bfile", type=str, default = 'support_files/eur_1000G.noduplicates.maf01.snpsonly', dest = 'genetic_file')
-parser.add_argument("--anc-data", type=str, default = 'support_files/SNPalleles_1000Genomes_allsites.txt.gz', dest = 'ancdata')
-parser.add_argument("--chr", type=str, default = 'CHR', dest = 'chrom')
-parser.add_argument("--pos", type=str, default = 'POS', dest = 'pos')
-parser.add_argument("--snp-id", type=str, default = 'SNP', dest = 'snpid')
-parser.add_argument('--standard-beta', type = str, dest = 'standard_beta', default = 'BETA')
-parser.add_argument('--sib-beta', type = str, dest = 'sib_beta', default = 'BETA')
-parser.add_argument('--trait', type = str, dest = 'trait')
-parser.add_argument('--pval', type = str, dest = 'P', default = 'P')
-parser.add_argument('--preselected-snps', type=str, default = None, dest = 'snpset')
-parser.add_argument('--a1', type = str, default = 'A1', dest='alt_allele')
-parser.add_argument('--p-is-log', default=False, action=argparse.BooleanOptionalAction, dest = 'log10p')
-parser.add_argument('--logp-col', default=None, dest = 'logp_col', type = str)
+`--anc-data` file containing ancestral and derived alleles for each locus. Defaults to the file created using the 1000 Genomes data contained in the support files directory. 
 
+`--pos` label of the base pair position of each locus. Defaults to "POS".
+
+`--standard-beta` label of the column in the population GWAS file that contains the effect size estimates. Defaults to "BETA".
+
+`--sib-beta` label of the column in the sibling GWAS file that contains the effect size estimates. Defaults to "BETA".
+
+`--pval` label of the column containing the population GWAS association p-values. Defaults to "P".
+
+`--a1` label of the column containing the alternate allele counted in the GWAS for each locus. Defaults to "A1". 
+
+`--p-is-log` presence of this flag indicates that p-values have been negative log 10 transformed. 
+
+`--logp-col` label of the column containing the negative log 10 transformed p-values. Only necessary if the p-value has undergone transformation. 
+
+Once the script is run, there should be two files produced both with specified outlabel above: one with the suffix `sib.preproc.txt` and another with the the suffix `standard.preproc.txt` each containing the formatted summary statistics from the population and sibling GWAS.
+
+
+## Estimation of SAD variance using the PGSUS software
 
 ```python
 python pgsus.py --genetic-file sps_23_stats_v2/height/1kg.all.sps23.bed
