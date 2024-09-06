@@ -52,15 +52,17 @@ The possible flags that can be used to munge different input file formats are en
 
 `--logp-col` label of the column containing the negative log 10 transformed p-values. Only necessary if the p-value has undergone transformation. 
 
-Once the script is run, there should be two files produced both with specified outlabel above: one with the suffix `sib.preproc.txt` and another with the the suffix `standard.preproc.txt` each containing the formatted summary statistics from the population and sibling GWAS.
+Once the script is run, there should be two files produced both with specified outlabel above: one with the suffix `sib.preproc.txt` and another with the the suffix `standard.preproc.txt` each containing the formatted summary statistics from the population and sibling GWAS. Note that there will be a new column entitled `beta.altconsensus` that contains the same effect size estimates, but some will have been multiplied by -1 in order to ensure the correct polarity of the effect allele. 
 
 
 ## Estimation of SAD variance using the PGSUS software
 
+With the preprocessed data in hand the PGSUS software can now be run. There are a number of possible flags intended to help incorporate different sources of data. An example command is given below and each possible flag is described as well. 
+
 ```python
-python pgsus.py --genetic-file sps_23_stats_v2/height/1kg.all.sps23.bed
---pop-gwas sps_23_stats_v2/height/plink.wc.height.aperm.1K.to.1M.standard.preproc.txt
---sib-gwas sps_23_stats_v2/height/plink.wc.height.aperm.1K.to.1M.sib.preproc.txt
+python pgsus.py --genetic-file 1KG.data.bed
+--pop-gwas myresults/pegasus_height_decomposition.standard.preproc.txt
+--sib-gwas myresults/pegasus_height_decomposition.sib.preproc.txt
 --chrom-pos SNP
 --pvalue 1
 --pval-col P
@@ -75,3 +77,44 @@ python pgsus.py --genetic-file sps_23_stats_v2/height/1kg.all.sps23.bed
 --pos BP
 --permutation-test
 ```
+
+`--genetic-file` the plink formatted gentoype file for the prediction sample. This should contain the same SNPs that are in the ".preproc.txt" files. If not, the overlap will be found. 
+
+`--pop-gwas-file` the preprocessed file containing the population GWAS summary statistics. 
+
+`--sib-gwas-file` the preprocessed file containing the sibling GWAS summary statistics. 
+
+`--pvalue` the label of the column containing the population GWAS association pvalues in the `pop-gwas-file`. 
+
+`--ascertainment-set` either needs to be set to "gwas" or "sibs". Determines which GWAS to use for SNP selection given a particular threshold. Default is "gwas".
+
+`--chrom` label of the column containing the chromosome of each SNP. Default is "CHR". 
+
+`--pos` label of the base pair position of each locus. Defaults to "POS".
+
+`--pop-effect` label of the column in the population GWAS file that contains the effect size estimates. Defaults to "BETA".
+
+`--pop-se` label of the column in the population GWAS file that contains the standard errors. Defaults to "se". 
+
+`--sib-effect` label of the column in the sibling GWAS file that contains the effect size estimates. Defaults to "BETA".
+
+`--sib-se` label of the column in the sibling GWAS file that contains the standard errors. Defaults to "se". 
+
+`--pval-col` label of the column containing the population GWAS association p-values. Defaults to "P".
+
+`--nboots` the number of bootstraps to perform in estimating the standard errror of the isotropic inflation factor using the Deming regression framework.
+
+`--eigenvals` file that contains the eigenvalues of the prediction sample genotype matrix saved as an ".npy" formatted file. If this flag is absent then a numpy implementation of PCA will be berformed on the plink binary file specified using `bfile`. 
+
+`--eigenvecs` file that contains the eigenvectors of the prediction sample genotype matrix saved as an ".npy" formatted file.
+
+`--permutation-test` the presence of this flag indicates that the PC-wise permutation test should be performed. If absent, only the isotropic inflation factor will be estimated. 
+
+`--perm-pcs` the number of top PCs to be tested for the PC-wise permutation procedure. Defaults to the first 100 PCs. 
+
+`--nperm` the number of permutations to perform for each PC-wise decomposition in constructing the permutation based null. Defaults to 1000 permutations. 
+
+`--outfile-label` file prefix for output files produced during the data munging. 
+
+`--out` directory path where results should be written. 
+
