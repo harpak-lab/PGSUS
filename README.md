@@ -21,7 +21,8 @@ python munge_sumstats.py --pop-gwas-file standard_gwas_height.linear.gz
 The possible 
 ```python 
 --pop-gwas-file
-``` a file containing summary statistics from a population GWAS. In this example, a compressed file from [plink](https://www.cog-genomics.org/plink/1.9/assoc#linear)'s implementation is used. 
+```
+a file containing summary statistics from a population GWAS. In this example, a compressed file from [plink](https://www.cog-genomics.org/plink/1.9/assoc#linear)'s implementation is used. 
 `--sib-perm-file` a file containing summary statistics from a sibling GWAS. 
 `--outdir` directory path where results should be written. 
 `--outlabel` file prefix for output files produced during the data munging. 
