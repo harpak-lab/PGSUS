@@ -8,6 +8,12 @@ In addition to the files listed below, you can find files containing summary sta
 
 - `simulations`: Contains scripts to generate simulated summary statistics and perform the PGSUS decomposition while varying parameters of interest. Detailed discussion of implementation and different flags can be found in this directory.
 
+## Creating a conda environment
+
+Before you can analyze your polygenic score, you first need to create the appropriate environment using conda. Once you have downloaded the requirements.txt file and have installed conda on your computer, the follwoing can be run to generate a conda environment with the necessary packages to apply PGSUS. 
+
+`conda create --name <env> --file requirements.txt`
+
 ## Formatting Summary Statistics
 
 The first step in applying PGSUS is properly formatting the standard and sibling GWAS summary statistics. Use the `munge_sumstats.py` script with the following flags. **Please download the necessary support files** from the link above.
