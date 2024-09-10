@@ -165,7 +165,7 @@ class block_permutation():
 			ranked_direct = (self.direct_vc_perm[k]/np.sum(self.standard_decomp_perm, axis = 1)).sort_values().reset_index(drop=True)
 			upper95_perm_direct[k] = ranked_direct.loc[949]
 			lower0_perm_direct[k] = ranked_direct.loc[0]
-			#I think that the denominator here should be the empirical decomp of standard stats?
+
 			ranked_sad = (self.sad_vc_perm[k]/np.sum(self.standard_decomp_perm, axis = 1)).sort_values().reset_index(drop=True)
 			upper95_perm_sad[k] = ranked_sad.loc[949]
 			lower0_perm_sad[k] = ranked_sad.loc[0]
@@ -173,10 +173,10 @@ class block_permutation():
 			ranked_covar = (self.covar_vc_perm[k]/np.sum(self.standard_decomp_perm, axis = 1)).sort_values().reset_index(drop=True)
 			upper975_perm_covar[k] = ranked_covar.loc[975]
 			lower025_perm_covar[k] = ranked_covar.loc[25]
-			
-			pvals_direct[k] = np.mean(np.where(self.direct_vc_perm[k] >= self.emp_direct_vc[k], 1, 0))
-			pvals_sad[k] = np.mean(np.where(self.sad_vc_perm[k] >= self.emp_sad_vc[k], 1, 0))
-			pvals_covar[k] = np.min([float(np.mean(np.where(self.covar_vc_perm[k] <= self.emp_covar_vc[k],1,0))),float(np.mean(np.where(self.covar_vc_perm[k] >= self.emp_covar_vc[k],1,0)))])
+
+			pvals_direct[k] = np.mean(np.where((self.emp_direct_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_direct), 1, 0))
+			pvals_sad[k] = np.mean(np.where((self.emp_sad_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_sad), 1, 0))
+			pvals_covar[k] = np.min([float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_covar), 1, 0))),float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_covar), 1, 0)))])
 
 		self.pvals_direct, self.pvals_sad, self.pvals_covar, self.upper95_perm_direct, self.upper95_perm_sad, self.upper975_perm_covar, self.lower0_perm_direct, self.lower0_perm_sad, self.lower025_perm_covar = pvals_direct, pvals_sad, pvals_covar, upper95_perm_direct, upper95_perm_sad, upper975_perm_covar, lower0_perm_direct, lower0_perm_sad, lower025_perm_covar
 		
