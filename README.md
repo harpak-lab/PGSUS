@@ -4,7 +4,7 @@ The Partitioning Genetic Scores Using Siblings (PGSUS, pronounced "Pegasus") met
 
 ## Directory Contents
 
-In addition to the files listed below, you can find files containing summary statistics, preprocessing steps, and actual commands for each analysis on the [Harpak Lab Website Data Tab](https://www.harpaklab.com/data).
+In addition to the files listed below, you can find files containing summary statistics, preprocessing steps, and actual commands for each analysis on the [Harpak Lab Website Data Tab](https://www.harpaklab.com/data). Additionally, the code and necessary input to generate each of the figures contained withing the manuscript can be found on the Harpak Lab Website Data Tab.
 
 - `simulations`: Contains scripts to generate simulated summary statistics and perform the PGSUS decomposition while varying parameters of interest. Detailed discussion of implementation and different flags can be found in this directory.
 
