@@ -19,11 +19,11 @@ Before you can analyze your polygenic score, you first need to create the approp
 The first step in applying PGSUS is properly formatting the standard and sibling GWAS summary statistics. Use the `munge_sumstats.py` script with the following flags. **Please download the necessary support files** from the link above.
 
 ```python 
-python munge_sumstats.py --pop-gwas-file standard_gwas_height.linear.gz
---sib-perm-file sibling_gwas_height.txt.gz
---preselected-snps index_snps.txt
---outdir myresults/
---outlabel pgsus_height_decomposition
+python munge_sumstats.py --pop-gwas-file example/example.pop.stats.linear
+--sib-perm-file example/example.sib.stats.linear
+--preselected-snps example/example.snp.ids.txt
+--outdir example/
+--outlabel pgsus_height_example
 --snp-id ID
  ```
 
@@ -70,8 +70,8 @@ With the preprocessed data in hand the PGSUS software can now be run. There are 
 
 ```python
 python pgsus.py --genetic-file 1KG.data.bed
---pop-gwas myresults/pegasus_height_decomposition.standard.preproc.txt
---sib-gwas myresults/pegasus_height_decomposition.sib.preproc.txt
+--pop-gwas example/pegasus_height_decomposition.standard.preproc.txt
+--sib-gwas example/pegasus_height_decomposition.sib.preproc.txt
 --chrom-pos SNP
 --pvalue 1
 --pval-col P
@@ -80,8 +80,8 @@ python pgsus.py --genetic-file 1KG.data.bed
 --sib-effect beta.altconsensus
 --sib-se EMP_SE
 --ascertainment-set gwas
---outfile-label plink.wc.1kg.all.sps23.height.aperm.1K.to.1M
---out sps_23_stats_v2/height/
+--outfile-label pegasus_height_decomposition
+--out example/
 --chrom CHR
 --pos BP
 --permutation-test
