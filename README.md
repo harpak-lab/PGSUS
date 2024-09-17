@@ -69,7 +69,7 @@ Once the script is run, there should be two files produced both with specified o
 With the preprocessed data in hand the PGSUS software can now be run. There are a number of possible flags intended to help incorporate different sources of data. An example command is given below and each possible flag is described as well. 
 
 ```python
-python pgsus.py --genetic-file 1KG.data.bed
+python pgsus.py --genetic-file 1kg.example.bed
 --pop-gwas example/pegasus_height_decomposition.standard.preproc.txt
 --sib-gwas example/pegasus_height_decomposition.sib.preproc.txt
 --chrom-pos SNP
