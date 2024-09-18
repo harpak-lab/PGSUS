@@ -9,11 +9,15 @@ In addition to the files listed below, you can find files containing summary sta
 - `simulations`: contains scripts to generate simulated summary statistics and perform the PGSUS decomposition while varying parameters of interest. Detailed discussion of implementation and different flags can be found in this directory.
 - `example`: contains input files needed to run the example commands in this repo.
 
-## Creating a conda environment
+## Creating and activating a conda environment
 
 Before you can analyze your polygenic score, you first need to create the appropriate environment using conda. Once you have downloaded the requirements.txt file and have installed conda on your computer, the follwoing can be run to generate a conda environment with the necessary packages to apply PGSUS. 
 
-`conda create --name <env> --file requirements.txt`
+`conda create --name pgsus --file requirements.txt`
+
+Once the environment is successfully created activate it using
+`source activate pgsus`
+
 
 ## Formatting Summary Statistics
 
