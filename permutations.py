@@ -10,7 +10,7 @@ warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
 class block_permutation():
 
-	def __init__(self, chr_pos, standard_beta_threshed, standard_se_threshed, sib_beta_threshed, 
+	def __init__(self, anc_data, chr_pos, standard_beta_threshed, standard_se_threshed, sib_beta_threshed, 
 		sib_se_threshed, ascp, thresh, outlabel, eigenvecs, eigenvalues, emp_direct_vc, emp_sad_vc, 
 		emp_covar_vc, emp_standard_decomp, emp_sib_decomp, emp_diff_decomp, variance_direct_vc, 
 		variance_sad_vc, variance_covar_vc, outdir, pos_label, pcs_to_test=15, nperm = 1000):
@@ -37,7 +37,7 @@ class block_permutation():
 
 	def block_bound_process(self):
 
-		df = pd.read_csv('support_files/Pickrell_breakpoints_EUR.bed', delim_whitespace = True)
+		df = pd.read_csv(anc_data, delim_whitespace = True)
 		df['chr'] = df['chr'].str.replace('chr','')
 		blocks = [] 
 		for index, row in df.iterrows():
