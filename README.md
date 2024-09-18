@@ -26,7 +26,7 @@ The first step in applying PGSUS is properly formatting the standard and sibling
 
 ```python 
 python munge_sumstats.py --pop-gwas-file example/example.pop.stats.linear \
---anc-data example/example.alt.alleles.txt \
+--anc-data example/example.alt.alleles.txt.gz \
 --sib-perm-file example/example.sib.stats.linear \
 --preselected-snps example/example.snp.ids.txt \
 --outdir example/ \
