@@ -25,12 +25,12 @@ Once the environment is successfully created activate it using
 The first step in applying PGSUS is properly formatting the standard and sibling GWAS summary statistics. Use the `munge_sumstats.py` script with the following flags. **Please download the necessary support files** from the link above.
 
 ```python 
-python munge_sumstats.py --pop-gwas-file example/example.pop.stats.linear
---sib-perm-file example/example.sib.stats.linear
---preselected-snps example/example.snp.ids.txt
---outdir example/
---outlabel pgsus_height_example
---snp-id ID
+python munge_sumstats.py --pop-gwas-file example/example.pop.stats.linear \
+--sib-perm-file example/example.sib.stats.linear \
+--preselected-snps example/example.snp.ids.txt \
+--outdir example/ \
+--outlabel pgsus_height_example \
+--snp-id ID \
  ```
 
 The possible flags that can be used to munge different input file formats are enumerated below:
