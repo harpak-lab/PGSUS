@@ -10,11 +10,12 @@ from permutations import block_permutation
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
+from pylr2 import regress2
 from scipy.odr import *
 
 class estimate_components(object):
 
-    def __init__(self, pc_genotypes, gwas_beta, gwas_se, sib_beta, sib_se, chr_pos, asc_p, thresh, outpath, outlabel, pos_label,
+    def __init__(self, anc_data, pc_genotypes, gwas_beta, gwas_se, sib_beta, sib_se, chr_pos, asc_p, thresh, outpath, outlabel, pos_label,
         pc_lower_bound=100, eigenvecs= None, eigenvalues = None, boot_se = 100, block_perm = True, pcs_to_test = 15, nperm = 1000):
         
         self.gwas_beta = gwas_beta.reset_index(drop = True)
@@ -58,7 +59,7 @@ class estimate_components(object):
         self.direct_variance_component, self.sad_variance_component, self.covar_variance_component, self.decomp_gwas, self.decomp_sib, self.decomp_diff, self.gwas_avg_se2,self.sib_avg_se2, self.proj_gwas, self.proj_sib, self.proj_diff, self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, self.standard_variance_component, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.beta_sum, self.alpha, self.alpha_se_new, self.vartotals, self.tau = self.estimate_components_and_alpha(self.gwas_beta, self.gwas_se,self.sib_beta,self.sib_se, self.ascertainment_p, self.thresh,self.eigenvecs, self.eigenvalues, 0, self.tau, self.pc_upper_bound, pc_lower_bound = self.pc_lower_bound)
         
         if block_perm:
-            block_permutation(chr_pos, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.ascertainment_p, self.thresh, outlabel, self.eigenvecs, self.eigenvalues, self.direct_variance_component, self.sad_variance_component, self.covar_variance_component, self.decomp_gwas, self.decomp_sib, self.decomp_diff,self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, outpath, pos_label, self.pcs_to_test, nperm = nperm)
+            block_permutation(anc_data, chr_pos, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.ascertainment_p, self.thresh, outlabel, self.eigenvecs, self.eigenvalues, self.direct_variance_component, self.sad_variance_component, self.covar_variance_component, self.decomp_gwas, self.decomp_sib, self.decomp_diff,self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, outpath, pos_label, self.pcs_to_test, nperm = nperm)
         else:
             pass
 
