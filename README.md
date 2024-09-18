@@ -30,7 +30,7 @@ python munge_sumstats.py --pop-gwas-file example/example.pop.stats.linear \
 --preselected-snps example/example.snp.ids.txt \
 --outdir example/ \
 --outlabel pgsus_height_example \
---snp-id ID \
+--snp-id ID 
  ```
 
 The possible flags that can be used to munge different input file formats are enumerated below:
