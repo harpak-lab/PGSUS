@@ -16,6 +16,7 @@ Before you can analyze your polygenic score, you first need to create the approp
 `conda create --name pgsus --file requirements.txt`
 
 Once the environment is successfully created activate it using
+
 `source activate pgsus`
 
 
