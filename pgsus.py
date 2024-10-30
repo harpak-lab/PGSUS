@@ -36,7 +36,7 @@ __version__ = '1.0.0'
 MASTHEAD = "*********************************************************************\n"
 MASTHEAD += "* SAD variance decomposition for polygenic scores\n"
 MASTHEAD += "* Version {V}\n".format(V=__version__)
-MASTHEAD += "* (C) 2023 Samuel Pattillo Smith, Doc Edge, and Arbel Harpak\n"
+MASTHEAD += "* (C) 2024 Samuel Pattillo Smith, Doc Edge, and Arbel Harpak\n"
 MASTHEAD += "* University of Texas and University of Southern California\n"
 MASTHEAD += "* GNU General Public License v3\n"
 MASTHEAD += "*********************************************************************\n"
@@ -92,6 +92,7 @@ parser.add_argument('--nperm', type = int, dest = 'nperm', default = 1000)
 parser.add_argument("--outfile-label", type=str, default = '', dest = 'outlabel')
 parser.add_argument("--out", type=str, default = './', dest = 'outpath')
 parser.add_argument('--anc-data',type=str, dest = 'anc_data',default = 'support_files/SNPalleles_1000Genomes_allsites.txt.gz')
+parser.add_argument('--block-bounds',type=str, dest = 'block_bounds',default = 'support_files/Pickrell_breakpoints_EUR.bed')
 
 args = parser.parse_args()
 genetic_file = args.genetic_file
@@ -109,6 +110,7 @@ SIBSE = args.SIBSE
 POP_P = args.POP_P
 P = args.P
 anc_data = args.anc_data
+block_bounds = args.block_bounds
 ascertainment = args.ascertainment
 eigenvalues = args.eigenvalues
 eigenvecs = args.eigenvecs
@@ -121,7 +123,7 @@ pcs_to_test = args.pcs_to_test
 nperm = args.nperm
 nboots = args.nboots
 
-
+print(block_perm)
 if __name__ == '__main__':
 
 	args = parser.parse_args()
@@ -172,27 +174,31 @@ if __name__ == '__main__':
 
 	log.log('Done.\n')
 	#subset the population gwas results to just the sites that are in the target genotype data
-	log.log('Reading target sample genotypes...')
-	genotypes = Bed(genetic_file, count_A1 = True)
-	loci = ['%g'%(y[0]) + ':' + str(y[2])[:-2] for y in genotypes.pos]
+	if genetic_file != './': 
+		log.log('Reading target sample genotypes...')
+		genotypes = Bed(genetic_file, count_A1 = True)
+		loci = ['%g'%(y[0]) + ':' + str(y[2])[:-2] for y in genotypes.pos]
 
-	popgwas = popgwas[popgwas[chr_pos].isin(loci)]
-	sibgwas = sibgwas[sibgwas[chr_pos].isin(loci)].drop_duplicates(keep='first')
-	overlap_snps = sibgwas.merge(popgwas, on = chr_pos,how = 'inner')[[chr_pos]]
-	popgwas = popgwas[popgwas[chr_pos].isin(overlap_snps[chr_pos].tolist())].drop_duplicates(subset = chr_pos)
-	sibgwas = sibgwas[sibgwas[chr_pos].isin(overlap_snps[chr_pos].tolist())].drop_duplicates(subset = chr_pos)
-	statsnps = popgwas[chr_pos].tolist()
-	statsnps = genotypes.sid_to_index(statsnps)
-	
-	pc_genotypes = genotypes.read().val[:,statsnps]	
-	snps_nans = np.unique(np.argwhere(np.isnan(pc_genotypes))[:,1])
-	pc_genotypes = np.delete(pc_genotypes, snps_nans, 1)
-	statsnps = np.delete(statsnps,snps_nans,0)
-	popgwas = popgwas.drop(snps_nans)
-	popgwas = popgwas.reset_index(drop = True)
-	sibgwas = sibgwas.drop(snps_nans)
-	sibgwas = sibgwas.reset_index(drop = True)
+		popgwas = popgwas[popgwas[chr_pos].isin(loci)]
+		sibgwas = sibgwas[sibgwas[chr_pos].isin(loci)].drop_duplicates(keep='first')
+		overlap_snps = sibgwas.merge(popgwas, on = chr_pos,how = 'inner')[[chr_pos]]
+		popgwas = popgwas[popgwas[chr_pos].isin(overlap_snps[chr_pos].tolist())].drop_duplicates(subset = chr_pos)
+		sibgwas = sibgwas[sibgwas[chr_pos].isin(overlap_snps[chr_pos].tolist())].drop_duplicates(subset = chr_pos)
+		statsnps = popgwas[chr_pos].tolist()
+		statsnps = genotypes.sid_to_index(statsnps)
+		
+		pc_genotypes = genotypes.read().val[:,statsnps]	
+		snps_nans = np.unique(np.argwhere(np.isnan(pc_genotypes))[:,1])
+		pc_genotypes = np.delete(pc_genotypes, snps_nans, 1)
+		statsnps = np.delete(statsnps,snps_nans,0)
+		popgwas = popgwas.drop(snps_nans)
+		popgwas = popgwas.reset_index(drop = True)
+		sibgwas = sibgwas.drop(snps_nans)
+		sibgwas = sibgwas.reset_index(drop = True)
+	else:
+		pc_genotypes = ''
 	block_snps = popgwas[[CHR, POS, POP_P]]
+
 	log.log('Done.\n')
 	
 	if ascertainment == 'sibs':
@@ -203,9 +209,9 @@ if __name__ == '__main__':
 		stat_to_geno_df = popgwas
 
 	log.log('Beginning SAD decomposition...')
-	sad = estimate_components(pc_genotypes, popgwas[POPBETA].astype(float), popgwas[POPSE].astype(float), \
+	sad = estimate_components(block_bounds, pc_genotypes, popgwas[POPBETA].astype(float), popgwas[POPSE].astype(float), \
 		sibgwas[SIBBETA].astype(float), sibgwas[SIBSE].astype(float), block_snps, asc_ps.astype(float), \
-		pval, outpath, outlabel, POS, pc_lower_bound=100, eigenvecs= eigenvecs, eigenvalues = eigenvalues, \
+		pval, outpath, outlabel, CHR, POS, pc_lower_bound=100, eigenvecs= eigenvecs, eigenvalues = eigenvalues, \
 		boot_se = nboots, block_perm = block_perm, pcs_to_test = pcs_to_test, nperm = nperm)
 	log.log('Done.\n')
 

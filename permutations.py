@@ -10,12 +10,14 @@ warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
 class block_permutation():
 
-	def __init__(self, anc_data, chr_pos, standard_beta_threshed, standard_se_threshed, sib_beta_threshed, 
+	def __init__(self, block_bounds, chr_pos, chrom, standard_beta_threshed, standard_se_threshed, sib_beta_threshed, 
 		sib_se_threshed, ascp, thresh, outlabel, eigenvecs, eigenvalues, emp_direct_vc, emp_sad_vc, 
-		emp_covar_vc, emp_standard_decomp, emp_sib_decomp, emp_diff_decomp, variance_direct_vc, 
-		variance_sad_vc, variance_covar_vc, outdir, pos_label, pcs_to_test=15, nperm = 1000):
-
+		emp_covar_vc, emp_nondirect_vc, emp_standard_decomp, emp_sib_decomp, emp_diff_decomp, variance_direct_vc, 
+		variance_sad_vc, variance_covar_vc, variance_nondirect_vc, outdir, pos_label, pcs_to_test=15, nperm = 1000):
+		print('PERMUTING')
+		self.block_bounds= block_bounds
 		self.chr_pos = chr_pos
+		self.chrom = chrom
 		self.standard_beta_threshed = standard_beta_threshed.reset_index(drop=True)
 		self.standard_se_threshed = standard_se_threshed.reset_index(drop=True)
 		self.sib_beta_threshed = sib_beta_threshed.reset_index(drop=True)
@@ -26,9 +28,9 @@ class block_permutation():
 		self.outdir = outdir
 		self.outlabel = outlabel
 		self.pos_label = pos_label
-		self.emp_direct_vc, self.emp_sad_vc, self.emp_covar_vc = emp_direct_vc, emp_sad_vc, emp_covar_vc
+		self.emp_direct_vc, self.emp_sad_vc, self.emp_covar_vc, self.emp_nondirect_vc = emp_direct_vc, emp_sad_vc, emp_covar_vc, emp_nondirect_vc
 		self.emp_standard_decomp, self.emp_sib_decomp, self.emp_diff_decomp = emp_standard_decomp, emp_sib_decomp, emp_diff_decomp
-		self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc = variance_direct_vc, variance_sad_vc, variance_covar_vc
+		self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, self.variance_nondirect_vc = variance_direct_vc, variance_sad_vc, variance_covar_vc, variance_nondirect_vc
 		self.block_bound_process()
 		self.block_dots(self.standard_beta_threshed, self.standard_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, thresh, eigenvecs, self.chr_pos)
 		self.permute_blocks(eigenvalues)
@@ -37,11 +39,11 @@ class block_permutation():
 
 	def block_bound_process(self):
 
-		df = pd.read_csv(anc_data, delim_whitespace = True)
+		df = pd.read_csv(self.block_bounds, delim_whitespace = True)
 		df['chr'] = df['chr'].str.replace('chr','')
 		blocks = [] 
 		for index, row in df.iterrows():
-			snps = self.chr_pos[(self.chr_pos['CHR'].astype(float) == float(row['chr'])) & (float(row['start']) <= self.chr_pos[self.pos_label].astype(float)) & (float(row['stop']) > self.chr_pos[self.pos_label].astype(float))].index.tolist()
+			snps = self.chr_pos[(self.chr_pos[self.chrom].astype(float) == float(row['chr'])) & (float(row['start']) <= self.chr_pos[self.pos_label].astype(float)) & (float(row['stop']) > self.chr_pos[self.pos_label].astype(float))].index.tolist()
 			self.chr_pos.loc[snps,'block'] = int(index)
 
 	def element_multiplier(self,x,y):
@@ -96,14 +98,16 @@ class block_permutation():
 		direct_vc = sib_decomp - sib_se_decomp
 		sad_vc = diff_decomp - sib_se_decomp - standard_se_decomp
 		covar_vc = standard_decomp - diff_decomp - sib_decomp + 2*sib_se_decomp
+		nondirect_vc = (standard_decomp - standard_se_decomp - (sib_decomp-sib_se_decomp))
 
-		return [direct_vc, sad_vc, covar_vc, standard_decomp, sib_decomp, diff_decomp, standard_se_decomp, sib_se_decomp, standard_projection, sib_projection, diff_projection]
+		return [direct_vc, sad_vc, covar_vc, standard_decomp, sib_decomp, diff_decomp, standard_se_decomp, sib_se_decomp, standard_projection, sib_projection, diff_projection, nondirect_vc]
 
 	def permute_blocks(self, eigenvalues):
 
 		direct_vc_perm = pd.DataFrame(np.zeros((self.nperm,len(eigenvalues))))
 		sad_vc_perm = pd.DataFrame(np.zeros((self.nperm,len(eigenvalues))))
 		covar_vc_perm = pd.DataFrame(np.zeros((self.nperm,len(eigenvalues))))
+		nondirect_vc_perm = pd.DataFrame(np.zeros((self.nperm,len(eigenvalues))))
 
 		standard_proj_perm = pd.DataFrame(np.zeros((self.nperm,len(eigenvalues))))
 		sib_proj_perm = pd.DataFrame(np.zeros((self.nperm,len(eigenvalues))))
@@ -125,6 +129,7 @@ class block_permutation():
 			direct_vc_perm.loc[perm] = vcs_perm[0]
 			sad_vc_perm.loc[perm] = vcs_perm[1]
 			covar_vc_perm.loc[perm] = vcs_perm[2]
+			nondirect_vc_perm.loc[perm] = vcs_perm[11]
 
 			standard_decomp_perm.loc[perm] = vcs_perm[3]
 			sib_decomp_perm.loc[perm] = vcs_perm[4]
@@ -137,6 +142,7 @@ class block_permutation():
 		self.direct_vc_perm = direct_vc_perm
 		self.sad_vc_perm = sad_vc_perm
 		self.covar_vc_perm = covar_vc_perm
+		self.nondirect_vc_perm = nondirect_vc_perm
 
 		self.standard_proj_perm = standard_proj_perm
 		self.sib_proj_perm = sib_proj_perm
@@ -160,6 +166,10 @@ class block_permutation():
 		upper975_perm_covar = np.ones(self.pcs_to_test)
 		lower025_perm_covar = np.ones(self.pcs_to_test)
 
+		pvals_nondirect = np.ones(self.pcs_to_test)
+		upper975_perm_nondirect = np.ones(self.pcs_to_test)
+		lower025_perm_nondirect = np.ones(self.pcs_to_test)
+
 		for k in range(self.pcs_to_test):
 			
 			ranked_direct = (self.direct_vc_perm[k]/np.sum(self.standard_decomp_perm, axis = 1)).sort_values().reset_index(drop=True)
@@ -174,49 +184,45 @@ class block_permutation():
 			upper975_perm_covar[k] = ranked_covar.loc[975]
 			lower025_perm_covar[k] = ranked_covar.loc[25]
 
+			ranked_nondirect = (self.nondirect_vc_perm[k]/np.sum(self.standard_decomp_perm, axis = 1)).sort_values().reset_index(drop=True)
+			upper975_perm_nondirect[k] = ranked_nondirect.loc[975]
+			lower025_perm_nondirect[k] = ranked_nondirect.loc[25]
+
 			pvals_direct[k] = np.mean(np.where((self.emp_direct_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_direct), 1, 0))
 			pvals_sad[k] = np.mean(np.where((self.emp_sad_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_sad), 1, 0))
 			pvals_covar[k] = np.min([float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_covar), 1, 0))),float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_covar), 1, 0)))])
+			pvals_nondirect[k] = np.min([float(np.mean(np.where((self.emp_nondirect_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_nondirect), 1, 0))),float(np.mean(np.where((self.emp_nondirect_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_nondirect), 1, 0)))])
 
-		self.pvals_direct, self.pvals_sad, self.pvals_covar, self.upper95_perm_direct, self.upper95_perm_sad, self.upper975_perm_covar, self.lower0_perm_direct, self.lower0_perm_sad, self.lower025_perm_covar = pvals_direct, pvals_sad, pvals_covar, upper95_perm_direct, upper95_perm_sad, upper975_perm_covar, lower0_perm_direct, lower0_perm_sad, lower025_perm_covar
+		self.pvals_direct, self.pvals_sad, self.pvals_covar, self.pvals_nondirect, self.upper95_perm_direct, self.upper95_perm_sad, self.upper975_perm_covar, self.upper975_perm_nondirect, self.lower0_perm_direct, self.lower0_perm_sad, self.lower025_perm_covar, self.lower025_perm_nondirect = pvals_direct, pvals_sad, pvals_covar, pvals_nondirect, upper95_perm_direct, upper95_perm_sad, upper975_perm_covar, upper975_perm_nondirect, lower0_perm_direct, lower0_perm_sad, lower025_perm_covar, lower025_perm_nondirect
 		
 	def proportion_table(self):
 		
 		direct_prop_by_pcs = self.emp_direct_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp)
-		direct_prop_se = np.sqrt(self.variance_direct_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp))
+		direct_prop_se = self.variance_direct_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp)
+		direct_prop_se = np.sqrt(np.array(direct_prop_se).astype(float))
 		direct_pvals = self.pvals_direct[:self.pcs_to_test]
 
 		sad_prop_by_pcs = self.emp_sad_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp)
-		sad_prop_se = np.sqrt(self.variance_sad_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp))
+		sad_prop_se = self.variance_sad_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp)
+		sad_prop_se = np.sqrt(np.array(sad_prop_se).astype(float))
 		sad_pvals = self.pvals_sad[:self.pcs_to_test]
 
 		covar_prop_by_pcs = self.emp_covar_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp)
-		covar_prop_se = np.sqrt(self.variance_covar_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp))
+		covar_prop_se = self.variance_covar_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp)
+		covar_prop_se = np.sqrt(np.array(covar_prop_se).astype(float))
 		covar_pvals = self.pvals_covar[:self.pcs_to_test]
 
-		outarray = np.vstack((direct_prop_by_pcs, direct_prop_se, direct_pvals, self.upper95_perm_direct,self.lower0_perm_direct, sad_prop_by_pcs, sad_prop_se, sad_pvals, self.upper95_perm_sad,self.lower0_perm_sad, covar_prop_by_pcs, covar_prop_se, covar_pvals, self.upper975_perm_covar,self.lower025_perm_covar))
-		outarray = np.round(outarray,4)
-		indices = ['direct_vc_estimate', 'direct_vc_estimate_se', 'direct_vc_pvals','upper95_perm_direct','lower0_perm_direct','sad_vc_estimate', 'sad_vc_estimate_se', 'sad_vc_pvals','upper95_perm_sad','lower0_perm_sad','covar_vc_estimate', 'covar_vc_estimate_se', 'covar_vc_pvals','upper975_perm_covar','lower025_perm_covar']
+		nondirect_prop_by_pcs = self.emp_nondirect_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp)
+		nondirect_prop_se = self.variance_nondirect_vc[:self.pcs_to_test]/np.sum(self.emp_standard_decomp)
+		nondirect_prop_se = np.sqrt(np.array(nondirect_prop_se).astype(float))
+		nondirect_pvals = self.pvals_nondirect[:self.pcs_to_test]
+
+		outarray = np.vstack((direct_prop_by_pcs, direct_prop_se, direct_pvals, self.upper95_perm_direct,self.lower0_perm_direct, sad_prop_by_pcs, sad_prop_se, sad_pvals, self.upper95_perm_sad,self.lower0_perm_sad, covar_prop_by_pcs, covar_prop_se, covar_pvals, self.upper975_perm_covar,self.lower025_perm_covar, nondirect_prop_by_pcs, nondirect_prop_se, nondirect_pvals, self.upper975_perm_nondirect, self.lower025_perm_nondirect))
+		outarray = np.round(outarray.astype(float),4)
+		indices = ['direct_vc_estimate', 'direct_vc_estimate_se', 'direct_vc_pvals','upper95_perm_direct','lower0_perm_direct','sad_vc_estimate', 'sad_vc_estimate_se', 'sad_vc_pvals','upper95_perm_sad','lower0_perm_sad','covar_vc_estimate', 'covar_vc_estimate_se', 'covar_vc_pvals','upper975_perm_covar','lower025_perm_covar','nondirect_vc_estimate', 'nondirect_vc_estimate_se', 'nondirect_vc_pvals','upper975_perm_nondirect','lower025_perm_nondirect']
 		tests_out = pd.DataFrame(outarray, index = indices, columns = ['PC' + str(i+1) for i in range(outarray.shape[1])])
 
 		if self.outlabel == '':
 			tests_out.to_csv(self.outdir + '/block.permutation.stats.pval.' + str(self.thresh) + '.txt', sep = '\t')
 		else:
 			tests_out.to_csv(self.outdir + '/' + self.outlabel + '.block.permutation.stats.pval.' + str(self.thresh) + '.txt', sep = '\t')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
