@@ -28,7 +28,7 @@ The PGSUS software uses pysnptools to manipulate genetic data. It is most easily
 
 The first step in applying PGSUS is properly formatting the standard and sibling GWAS summary statistics. Use the `munge_sumstats.py` script with the following flags. 
 
-**Please download the necessary support files** from the link above before performing analyses. The support_files directory should be places in the same directory as the pgsus.py script. 
+**Please download the necessary support files** from the link above before performing analyses. The support_files directory should be placed in the same directory as the pgsus.py script. 
 
 ```python 
 python munge_sumstats.py --pop-gwas-file example/example.pop.stats.linear \
