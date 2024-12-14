@@ -4,7 +4,7 @@ The Partitioning Genetic Scores Using Siblings (PGSUS, pronounced "Pegasus") met
 
 ## Directory Contents
 
-In addition to the files listed below, you can find files containing summary statistics, preprocessing steps, and actual commands for each analysis on the [Harpak Lab Website Data Tab](https://www.harpaklab.com/data). Additionally, the code and necessary input to generate each of the figures contained withing the manuscript can be found on the Harpak Lab Website Data Tab.
+In addition to the files listed below, you can find files containing summary statistics, preprocessing steps, and actual commands for each analysis on the [Harpak Lab Website Data Tab](https://www.harpaklab.com/data). Additionally, the code and necessary input to generate each of the figures contained withing the manuscript can be found on the Harpak Lab Website Data Tab or downloaded directly from the [Dropbox folder](https://www.dropbox.com/scl/fo/mqgd8vkutaofj2hkss9ub/AAl-panw2YQ0MQrRW2pq6fk?rlkey=oa1yichkk8ad0v6hogaskbs6k&st=tn3itqrg&dl=0).
 
 - `simulations`: contains scripts to generate simulated summary statistics and perform the PGSUS decomposition while varying parameters of interest. Detailed discussion of implementation and different flags can be found in this directory.
 - `example`: contains input files needed to run the example commands in this repo.
@@ -26,7 +26,9 @@ The PGSUS software uses pysnptools to manipulate genetic data. It is most easily
 
 ## Formatting Summary Statistics
 
-The first step in applying PGSUS is properly formatting the standard and sibling GWAS summary statistics. Use the `munge_sumstats.py` script with the following flags. **Please download the necessary support files** from the link above.
+The first step in applying PGSUS is properly formatting the standard and sibling GWAS summary statistics. Use the `munge_sumstats.py` script with the following flags. 
+
+**Please download the necessary support files** from the link above before performing analyses. The support_files directory should be places in the same directory as the pgsus.py script. 
 
 ```python 
 python munge_sumstats.py --pop-gwas-file example/example.pop.stats.linear \
