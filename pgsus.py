@@ -123,14 +123,13 @@ pcs_to_test = args.pcs_to_test
 nperm = args.nperm
 nboots = args.nboots
 
-print(block_perm)
 if __name__ == '__main__':
 
 	args = parser.parse_args()
 	if args.outpath is None:
 		raise ValueError('--outpath is required.')
 
-	log = Logger(args.outpath+'/pval.' + str(pval) + '.log')
+	log = Logger(outpath+'/' + outlabel + '.pval.' + str(pval) + '.log')
 
 	defaults = vars(parser.parse_args(''))
 	opts = vars(args)
@@ -188,6 +187,11 @@ if __name__ == '__main__':
 		statsnps = genotypes.sid_to_index(statsnps)
 		
 		pc_genotypes = genotypes.read().val[:,statsnps]	
+		if len(statsnps) != pc_genotypes.shape[0]:
+			log.log('Warning: There are index SNPs in the PGS that are not contained in the PCA of the prediction sample. The corresponding partition will be for only the overlapping variants. ')
+			log.log('Overlapping SNPs written to ' + args.outpath+'/' + outlabel + '.pval.' + str(pval) + '.overlap.snps.txt')
+			overlap_snps.to_csv(args.outpath + '/' + outlabel + '.pval.' + str(pval) + '.overlap.snps.txt', sep = '\t', index = False)
+
 		snps_nans = np.unique(np.argwhere(np.isnan(pc_genotypes))[:,1])
 		pc_genotypes = np.delete(pc_genotypes, snps_nans, 1)
 		statsnps = np.delete(statsnps,snps_nans,0)
