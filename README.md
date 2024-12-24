@@ -100,8 +100,8 @@ With the preprocessed data in hand the PGSUS software can now be run. There are 
 
 ```python
 python pgsus.py --genetic-file 1kg.example.bed \
---pop-gwas example/pegasus_height_decomposition.standard.preproc.txt \
---sib-gwas example/pegasus_height_decomposition.sib.preproc.txt \
+--pop-gwas example/pgsus_height_example.standard.preproc.txt \
+--sib-gwas example/pgsus_height_example.sib.preproc.txt \
 --chrom-pos SNP \
 --pvalue 1 \
 --pval-col P \
@@ -110,7 +110,7 @@ python pgsus.py --genetic-file 1kg.example.bed \
 --sib-effect beta.altconsensus \
 --sib-se EMP_SE \
 --ascertainment-set gwas \
---outfile-label pegasus_height_decomposition \
+--outfile-label pgsus_height_example \
 --out example/  \
 --chrom CHR \
 --pos BP \
