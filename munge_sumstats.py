@@ -44,6 +44,7 @@ standard_beta = args.standard_beta
 log10p = args.log10p
 logp_col = args.logp_col
 
+
 class make_input_files(object):
 
 	def __init__(self, outdir, outlabel, pop_gwas_file, sib_gwas_perm_file, genetic_file, anc_data, 
@@ -92,7 +93,6 @@ class make_input_files(object):
 			snpset = pd.DataFrame(np.zeros((1,2)))
 		
 		self.check_shared_snps(snpset)
-		# print(self.pop_gwas)
 
 	def extract_and_clump(self):
 		
@@ -163,37 +163,6 @@ class make_input_files(object):
 			self.clump_gwas = self.pop_gwas[[self.chr_label, 'SNP', 'BP', alt_allele, self.standard_beta, pval]]
 			self.clump_gwas = self.clump_gwas.drop_duplicates(subset = 'SNP')
 			self.clump_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
-
-
-		else:
-			#first make sure that the alternative allele is set to be the same as in the 1kg data
-			#now that we have fixed that let's merge them together, using the chromosome rsid combo label to
-			#account for any potential repetitions of rsIDs on different chromosomes
-			#take the shared SNPs, relabel them, and then write out the list
-			shared_snps = self.pop_gwas[['SNP']].merge(self.sib_gwas[['SNP']], on = 'SNP', how = 'inner')
-			consensus = shared_snps[['SNP']].merge(self.anc_data[['SNP']], on = 'SNP', how = 'inner')
-
-			#now that we have the overlap between snps sets take the corresponding summary statistics from 
-			#the standard GWAS and clump them agnostic of p-value
-			if 'BP' not in self.pop_gwas:
-				self.pop_gwas = self.pop_gwas.rename(columns = {'POS':'BP'})
-			self.pop_gwas = self.pop_gwas.set_index('SNP').loc[consensus['SNP'].tolist()]
-			self.pop_gwas = self.pop_gwas.rename(columns ={'TEST.1':'STAT','OBS_CT':'NIND'})
-			self.pop_gwas = self.pop_gwas.reset_index()
-			self.clump_gwas = self.pop_gwas[[self.chr_label,'SNP','BP', 'A1', 'BETA',pval]]
-			self.clump_gwas = self.clump_gwas.drop_duplicates(subset = 'SNP')
-			self.clump_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
-			#extract the consensus from the provided 1kg file and clump them agnostic to p-value
-			self.extract_and_clump()
-
-			#read in the resulting SNPs from each clump
-			clumped_snps = pd.read_csv(self.outdir + '/' + self.outlabel + '.clumped.snps.txt',sep = '\t', header = None)
-			clumped_snps.columns = ['SNP']
-			self.pop_gwas = self.pop_gwas.merge(clumped_snps, on = 'SNP', how = 'inner').drop_duplicates()
-			self.sib_gwas = self.sib_gwas.reset_index(drop = True)
-			# self.sib_gwas['SNP'] = self.sib_gwas['CHR'].astype(str) + ':' + self.sib_gwas['BP'].astype(str)
-			self.sib_gwas = self.sib_gwas[self.sib_gwas['SNP'].isin(self.pop_gwas['SNP'].tolist())]
-
 					
 		self.pop_gwas = self.pop_gwas.rename(columns={'SE':'se'})
 		
@@ -211,8 +180,11 @@ class make_input_files(object):
 		self.sib_gwas.to_csv(self.outdir + '/' + self.outlabel + '.sib.preproc.txt', sep = '\t', index = False)
 
 if __name__ == '__main__':
+	if not snpset:
+		sys.exit('You must provide a file containing the preselected SNP set from the plink clumping procedure.')
+
 	x = make_input_files(outdir, outlabel, popgwas, sibgwasperm, genetic_file, ancdata, chrom, pos, snpid,
-	 alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset)
+							alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset)
 	print('Munge complete.')
 
 

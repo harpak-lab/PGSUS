@@ -24,6 +24,25 @@ The PGSUS software uses pysnptools to manipulate genetic data. It is most easily
 `pip install pysnptools`
 
 
+## Clumping to identify independent markers
+
+The final prerequisite step for running PGSUS is to obtain a clumped set of SNPs that can be used to construct a PGS from independent markers. We recommend doing this using the greedy algorithm implemented by [plink1.9](https://www.cog-genomics.org/plink/1.9/postproc#clump). In our analyses we used the following command and parameter set, details for each flag can be found on the plink1.9 website. 
+
+```plink1.9 --bfile reference_population
+--clump gwas.results.linear
+--clump-p1 1
+--clump-p2 1
+--clump-r2 0.1
+--clump-kb 100
+--memory 16000
+--out gwas.results.clumped
+```
+`reference_population` is a plink binary file containing the population that will be used to estimate the LD among variants. 
+
+`gwas.results.linear` is the output from a population GWAS containing the summary statistics that will be used to construct the PGS.
+
+The list of index SNPs contained in the output file can then be used as the set of preselected SNPs in the following analyses. 
+
 ## Formatting Summary Statistics
 
 The first step in applying PGSUS is properly formatting the standard and sibling GWAS summary statistics. Use the `munge_sumstats.py` script with the following flags. 
@@ -56,9 +75,7 @@ The possible flags that can be used to munge different input file formats are en
 
 - `--chr` label of the column containing the chromosome of each SNP. Default is "CHR". 
 
-- `--bfile` path to the plink formatted bed file with the target sample. Only required if the clumping of the loci has not been previously been performed and identified with the preselected SNPs flag.
-
-- `--anc-data` file containing ancestral and derived alleles for each locus. Defaults to the file created using the 1000 Genomes data contained in the support files directory. 
+- `--anc-data` file containing ancestral and derived alleles for each locus. Defaults to the file created using the 1000 Genomes data contained in the support files directory. The default file can be downloaded from the dropbox and be housed in the `support_files` directory. The default will be set as `support_files/SNPalleles_1000Genomes_allsites.txt.gz`. 
 
 - `--pos` label of the base pair position of each locus. Defaults to "POS".
 
@@ -83,8 +100,8 @@ With the preprocessed data in hand the PGSUS software can now be run. There are 
 
 ```python
 python pgsus.py --genetic-file 1kg.example.bed \
---pop-gwas example/pegasus_height_decomposition.standard.preproc.txt \
---sib-gwas example/pegasus_height_decomposition.sib.preproc.txt \
+--pop-gwas example/pgsus_height_example.standard.preproc.txt \
+--sib-gwas example/pgsus_height_example.sib.preproc.txt \
 --chrom-pos SNP \
 --pvalue 1 \
 --pval-col P \
@@ -93,7 +110,7 @@ python pgsus.py --genetic-file 1kg.example.bed \
 --sib-effect beta.altconsensus \
 --sib-se EMP_SE \
 --ascertainment-set gwas \
---outfile-label pegasus_height_decomposition \
+--outfile-label pgsus_height_example \
 --out example/  \
 --chrom CHR \
 --pos BP \
