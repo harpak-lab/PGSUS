@@ -27,7 +27,9 @@ The PGSUS software uses pysnptools to manipulate genetic data. It is most easily
 
 ## Clumping to identify independent markers (optional)
 
-This step is only necessary for identify independent markers if they have not been previously identified for the PGS of interest. We recommend doing this using the greedy algorithm implemented by [plink1.9](https://www.cog-genomics.org/plink/1.9/postproc#clump). In our analyses we used the following command and parameter set, details for each flag can be found on the plink1.9 website. 
+This step is only necessary for identify independent markers if they have not been previously identified for the PGS of interest. If the set of SNPs used to construct the PGS has already be identified, the SNPs can be specified using the ```--preselected-snps snp.ids.txt``` described below in the data munging step.
+
+We recommend doing this using the greedy algorithm implemented by [plink1.9](https://www.cog-genomics.org/plink/1.9/postproc#clump). In our analyses we used the following command and parameter set, details for each flag can be found on the plink1.9 website. 
 
 ```plink1.9 --bfile reference_population
 --clump gwas.results.linear
