@@ -1,4 +1,4 @@
-![PGSUS](figures_src/PGSUS_logo.pdf)
+![PGSUS](figures_src/PGSUS_logo.pnf)
 # PGSUS: Partitioning Genetic Scores Using Siblings
 
 The Partitioning Genetic Scores Using Siblings (PGSUS, pronounced "Pegasus") method decomposes the variance of a polygenic score (PGS) into its various sources. Specifically, PGSUS uses paired population-level GWAS statistics and sibling GWAS statistics to determine the proportion of variance in a PGS attributable to direct effects and to Stratification, Assortative mating, and Indirect parental (Dynastic) effects, collectively referred to as "SAD effects." PGSUS is implemented in Python and runs in a conda environment. Applying PGSUS helps identify and interpret the performance of a PGS with respect to a particular target cohort by performing a two-step decomposition of variance in a PGS.
