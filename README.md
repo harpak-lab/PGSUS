@@ -25,9 +25,9 @@ The PGSUS software uses pysnptools to manipulate genetic data. It is most easily
 `pip install pysnptools`
 
 
-## Clumping to identify independent markers
+## Clumping to identify independent markers (optional)
 
-The final prerequisite step for running PGSUS is to obtain a clumped set of SNPs that can be used to construct a PGS from independent markers. We recommend doing this using the greedy algorithm implemented by [plink1.9](https://www.cog-genomics.org/plink/1.9/postproc#clump). In our analyses we used the following command and parameter set, details for each flag can be found on the plink1.9 website. 
+This step is only necessary for identify independent markers if they have not been previously identified for the PGS of interest. We recommend doing this using the greedy algorithm implemented by [plink1.9](https://www.cog-genomics.org/plink/1.9/postproc#clump). In our analyses we used the following command and parameter set, details for each flag can be found on the plink1.9 website. 
 
 ```plink1.9 --bfile reference_population
 --clump gwas.results.linear
