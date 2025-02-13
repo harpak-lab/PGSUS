@@ -76,10 +76,6 @@ class make_input_files(object):
 		
 		self.pop_gwas = self.pop_gwas.rename(columns = {snpid:'SNP'})
 		self.sib_gwas = self.sib_gwas.rename(columns = {snpid:'SNP'})
-		# print(self.pop_gwas.columns)
-		# print(self.sib_gwas.columns)
-		# self.pop_gwas['SNP'] = self.pop_gwas[self.snpid]
-		# self.sib_gwas['SNP'] = self.sib_gwas[self.snpid]
 
 		self.sib_gwas = self.sib_gwas.drop_duplicates(subset = ['SNP'])
 		self.pop_gwas = self.pop_gwas.drop_duplicates(subset = ['SNP'])
@@ -91,7 +87,6 @@ class make_input_files(object):
 			snpset = pd.DataFrame(np.zeros((1,2)))
 		
 		self.check_shared_snps(snpset)
-		# print(self.pop_gwas)
 
 	def extract_and_clump(self):
 		
@@ -166,8 +161,6 @@ class make_input_files(object):
 
 			#now that we have the overlap between snps sets take the corresponding summary statistics from 
 			#the standard GWAS and clump them agnostic of p-value
-			if 'BP' not in self.pop_gwas:
-				self.pop_gwas = self.pop_gwas.rename(columns = {'POS':'BP'})
 			self.pop_gwas = self.pop_gwas.set_index('SNP').loc[consensus['SNP'].tolist()]
 			self.pop_gwas = self.pop_gwas.rename(columns ={'TEST.1':'STAT','OBS_CT':'NIND'})
 			self.pop_gwas = self.pop_gwas.reset_index()
@@ -192,7 +185,6 @@ class make_input_files(object):
 		
 		if self.log10p:
 			self.pop_gwas['P'] = 10**(-1.0*self.pop_gwas[self.logp_col])
-			# self.sib_gwas['P'] = 10**(-1.0*self.sib_gwas['log10p'])
 
 		self.pop_gwas.to_csv(self.outdir + '/' + self.outlabel + '.standard.preproc.txt', sep = '\t', index = False)
 		siblabel = self.sib_gwas_file_name.replace('.gz','')
