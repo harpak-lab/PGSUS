@@ -32,7 +32,7 @@ class estimate_components(object):
         self.outlabel = outlabel
         self.plot = 0
 
-        if pc_genotypes != '':
+        if pc_genotypes.all() != "":
             self.pca(pc_genotypes)
         else:
             self.eigenvalues = np.load(eigenvalues, allow_pickle = True)
