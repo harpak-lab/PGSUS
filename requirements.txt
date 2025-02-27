@@ -55,8 +55,10 @@ patsy=0.5.3=py39h06a4308_0
 pcre=8.45=h295c915_0
 pillow=9.0.1=py39h22f2fdc_0
 pip=23.1.2=py39h06a4308_0
+pylr2
 pyparsing=3.0.9=py39h06a4308_0
 pyqt=5.9.2=py39h2531618_6
+pysnptools=0.3.13
 python=3.9.0=hdb3f193_2
 python-dateutil=2.8.2=pyhd3eb1b0_0
 pytz=2022.7=py39h06a4308_0
