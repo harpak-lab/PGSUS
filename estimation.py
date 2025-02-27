@@ -73,6 +73,7 @@ class estimate_components(object):
         return temp
         
     def error_decomp(self,ses,eigenvalues,eigenvecs):
+        #Olivia's issue is occurring here
         ses = np.power(np.array(ses).reshape(self.eigenvecs.shape[0]),2)
         temp = np.apply_along_axis(self.element_multiplier, 0, np.power(eigenvecs,2), ses)
         temp = np.sum(temp, axis = 0)
