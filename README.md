@@ -1,10 +1,11 @@
+![PGSUS](figures_src/PGSUS_logo.png)
 # PGSUS: Partitioning Genetic Scores Using Siblings
 
 The Partitioning Genetic Scores Using Siblings (PGSUS, pronounced "Pegasus") method decomposes the variance of a polygenic score (PGS) into its various sources. Specifically, PGSUS uses paired population-level GWAS statistics and sibling GWAS statistics to determine the proportion of variance in a PGS attributable to direct effects and to Stratification, Assortative mating, and Indirect parental (Dynastic) effects, collectively referred to as "SAD effects." PGSUS is implemented in Python and runs in a conda environment. Applying PGSUS helps identify and interpret the performance of a PGS with respect to a particular target cohort by performing a two-step decomposition of variance in a PGS.
 
 ## Directory Contents
 
-In addition to the files listed below, you can find files containing summary statistics, preprocessing steps, and actual commands for each analysis on the [Harpak Lab Website Data Tab](https://www.harpaklab.com/data). Additionally, the code and necessary input to generate each of the figures contained withing the manuscript can be found on the Harpak Lab Website Data Tab or downloaded directly from the [Dropbox folder](https://www.dropbox.com/scl/fo/mqgd8vkutaofj2hkss9ub/AAl-panw2YQ0MQrRW2pq6fk?rlkey=oa1yichkk8ad0v6hogaskbs6k&st=tn3itqrg&dl=0).
+In addition to the files listed below, you can find files containing summary statistics, preprocessing steps, and actual commands for each analysis on the [Harpak Lab Website Data Tab](https://www.harpaklab.com/data). Additionally, the code and necessary input to generate each of the figures contained withing the manuscript can be found on the Harpak Lab Website Data Tab.
 
 - `simulations`: contains scripts to generate simulated summary statistics and perform the PGSUS decomposition while varying parameters of interest. Detailed discussion of implementation and different flags can be found in this directory.
 - `example`: contains input files needed to run the example commands in this repo.
@@ -24,9 +25,11 @@ The PGSUS software uses pysnptools to manipulate genetic data. It is most easily
 `pip install pysnptools`
 
 
-## Clumping to identify independent markers
+## Clumping to identify independent markers (optional)
 
-The final prerequisite step for running PGSUS is to obtain a clumped set of SNPs that can be used to construct a PGS from independent markers. We recommend doing this using the greedy algorithm implemented by [plink1.9](https://www.cog-genomics.org/plink/1.9/postproc#clump). In our analyses we used the following command and parameter set, details for each flag can be found on the plink1.9 website. 
+This step is only necessary for identify independent markers if they have not been previously identified for the PGS of interest. If the set of SNPs used to construct the PGS has already be identified, the SNPs can be specified using the ```--preselected-snps``` flag described below in the data munging step.
+
+We recommend doing this using the greedy algorithm implemented by [plink1.9](https://www.cog-genomics.org/plink/1.9/postproc#clump). In our analyses we used the following command and parameter set, details for each flag can be found on the plink1.9 website. 
 
 ```plink1.9 --bfile reference_population
 --clump gwas.results.linear

@@ -44,7 +44,6 @@ standard_beta = args.standard_beta
 log10p = args.log10p
 logp_col = args.logp_col
 
-
 class make_input_files(object):
 
 	def __init__(self, outdir, outlabel, pop_gwas_file, sib_gwas_perm_file, genetic_file, anc_data, 
@@ -69,19 +68,14 @@ class make_input_files(object):
 			self.pop_gwas = pd.read_csv(self.pop_gwas_file_name, sep='\t', compression = 'gzip')
 		else:
 			self.pop_gwas = pd.read_csv(self.pop_gwas_file_name, sep='\t')
-
-		self.pop_gwas = self.pop_gwas.rename(columns = {snpid:'SNP'})
 		
 		if '.gz' in self.sib_gwas_file_name:
 			self.sib_gwas = pd.read_csv(self.sib_gwas_file_name, delim_whitespace = True, compression = 'gzip')
 		else:
 			self.sib_gwas = pd.read_csv(self.sib_gwas_file_name, delim_whitespace = True)
 		
-		if 'SNP' in self.pop_gwas.columns:
-			self.pop_gwas = self.pop_gwas.drop(columns = ['SNP'])
-			self.pop_gwas['SNP'] = self.pop_gwas[self.chr_label].astype(str) + ':' + self.pop_gwas[self.pos_label].astype(str)
-		else:
-			self.pop_gwas['SNP'] = self.pop_gwas[self.chr_label].astype(str) + ':' + self.pop_gwas[self.pos_label].astype(str)
+		self.pop_gwas = self.pop_gwas.rename(columns = {snpid:'SNP'})
+		self.sib_gwas = self.sib_gwas.rename(columns = {snpid:'SNP'})
 
 		self.sib_gwas = self.sib_gwas.drop_duplicates(subset = ['SNP'])
 		self.pop_gwas = self.pop_gwas.drop_duplicates(subset = ['SNP'])
@@ -130,12 +124,8 @@ class make_input_files(object):
 
 			clumped_snps = pd.read_csv(self.outdir + '/clumped.snps.txt',sep = '\t', header = None)
 			clumped_snps.columns = ['SNP']
-			if 'BP' not in self.pop_gwas:
-				self.pop_gwas = self.pop_gwas.rename(columns = {self.pos_label:'BP'})
 			
 			self.pop_gwas['ID'] = self.pop_gwas[self.chr_label].astype(str) + ':' + self.pop_gwas['SNP'].astype(str)
-			self.pop_gwas['BP'] = self.pop_gwas['BP'].astype(int).round(decimals=0)
-			self.pop_gwas['SNP'] = self.pop_gwas[self.chr_label].astype(str) + ':' + self.pop_gwas['BP'].astype(str)
 			self.pop_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
 			self.pop_gwas = self.pop_gwas[self.pop_gwas['SNP'].isin(clumped_snps['SNP'].tolist())].drop_duplicates()
 			self.sib_gwas['ID'] = self.sib_gwas['CHR'].astype(str) + ':' + self.sib_gwas['SNP'].astype(str)
@@ -145,10 +135,6 @@ class make_input_files(object):
 			self.sib_gwas = self.sib_gwas.reset_index(drop=True)
 
 		elif preselected_snp_ids.shape[0] > 1:
-			if 'BP' not in self.pop_gwas:
-				self.pop_gwas = self.pop_gwas.rename(columns = {self.pos_label:'BP'})
-			
-			self.pop_gwas['SNP'] = self.pop_gwas[self.chr_label].astype(str) + ':' + self.pop_gwas['BP'].astype(str)
 			self.pop_gwas = self.pop_gwas.drop_duplicates(subset = ['SNP'])
 
 			self.pop_gwas = self.pop_gwas.merge(preselected_snp_ids, on = 'SNP', how = 'inner')
@@ -160,9 +146,37 @@ class make_input_files(object):
 			self.pop_gwas = self.pop_gwas.reset_index(drop=True)
 			self.sib_gwas = self.sib_gwas.reset_index(drop=True)
 
-			self.clump_gwas = self.pop_gwas[[self.chr_label, 'SNP', 'BP', alt_allele, self.standard_beta, pval]]
+			self.clump_gwas = self.pop_gwas[[self.chr_label, 'SNP', self.pos_label, alt_allele, self.standard_beta, pval]]
 			self.clump_gwas = self.clump_gwas.drop_duplicates(subset = 'SNP')
 			self.clump_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
+
+
+		else:
+			#first make sure that the alternative allele is set to be the same as in the 1kg data
+			#now that we have fixed that let's merge them together, using the chromosome rsid combo label to
+			#account for any potential repetitions of rsIDs on different chromosomes
+			#take the shared SNPs, relabel them, and then write out the list
+			shared_snps = self.pop_gwas[['SNP']].merge(self.sib_gwas[['SNP']], on = 'SNP', how = 'inner')
+			consensus = shared_snps[['SNP']].merge(self.anc_data[['SNP']], on = 'SNP', how = 'inner')
+
+			#now that we have the overlap between snps sets take the corresponding summary statistics from 
+			#the standard GWAS and clump them agnostic of p-value
+			self.pop_gwas = self.pop_gwas.set_index('SNP').loc[consensus['SNP'].tolist()]
+			self.pop_gwas = self.pop_gwas.rename(columns ={'TEST.1':'STAT','OBS_CT':'NIND'})
+			self.pop_gwas = self.pop_gwas.reset_index()
+			self.clump_gwas = self.pop_gwas[[self.chr_label,'SNP','BP', 'A1', 'BETA',pval]]
+			self.clump_gwas = self.clump_gwas.drop_duplicates(subset = 'SNP')
+			self.clump_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
+			#extract the consensus from the provided 1kg file and clump them agnostic to p-value
+			self.extract_and_clump()
+
+			#read in the resulting SNPs from each clump
+			clumped_snps = pd.read_csv(self.outdir + '/' + self.outlabel + '.clumped.snps.txt',sep = '\t', header = None)
+			clumped_snps.columns = ['SNP']
+			self.pop_gwas = self.pop_gwas.merge(clumped_snps, on = 'SNP', how = 'inner').drop_duplicates()
+			self.sib_gwas = self.sib_gwas.reset_index(drop = True)
+			self.sib_gwas = self.sib_gwas[self.sib_gwas['SNP'].isin(self.pop_gwas['SNP'].tolist())]
+
 					
 		self.pop_gwas = self.pop_gwas.rename(columns={'SE':'se'})
 		
@@ -171,7 +185,6 @@ class make_input_files(object):
 		
 		if self.log10p:
 			self.pop_gwas['P'] = 10**(-1.0*self.pop_gwas[self.logp_col])
-			# self.sib_gwas['P'] = 10**(-1.0*self.sib_gwas['log10p'])
 
 		self.pop_gwas.to_csv(self.outdir + '/' + self.outlabel + '.standard.preproc.txt', sep = '\t', index = False)
 		siblabel = self.sib_gwas_file_name.replace('.gz','')
@@ -180,11 +193,8 @@ class make_input_files(object):
 		self.sib_gwas.to_csv(self.outdir + '/' + self.outlabel + '.sib.preproc.txt', sep = '\t', index = False)
 
 if __name__ == '__main__':
-	if not snpset:
-		sys.exit('You must provide a file containing the preselected SNP set from the plink clumping procedure.')
-
 	x = make_input_files(outdir, outlabel, popgwas, sibgwasperm, genetic_file, ancdata, chrom, pos, snpid,
-							alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset)
+	 alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset)
 	print('Munge complete.')
 
 
