@@ -51,7 +51,7 @@ class make_input_files(object):
 
 		self.pop_gwas_file_name = pop_gwas_file
 		self.sib_gwas_file_name = sib_gwas_perm_file
-		self.anc_data = pd.read_csv(anc_data,sep = '\t', compression='gzip')
+		self.anc_data = pd.read_csv(anc_data,sep = '\t',compression='infer')
 		self.genetic_file = genetic_file
 		self.standard_beta = standard_beta
 		self.sib_beta = sib_beta

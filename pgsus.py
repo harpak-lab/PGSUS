@@ -152,7 +152,7 @@ if __name__ == '__main__':
 
 	log.log('Reading support files...')
 	#load in the allele info
-	anc_data = pd.read_csv(anc_data,sep = '\t', compression = 'gzip')	
+	anc_data = pd.read_csv(anc_data,sep = '\t',compression = 'infer')	
 	anc_data['chrom.pos'] = anc_data['SNP'].astype(str)
 	log.log('Done.\n')
 	#read in genetic data
