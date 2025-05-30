@@ -19,10 +19,6 @@ Once the environment is successfully created activate it using
 
 `source activate pgsus`
 
-The PGSUS software uses pysnptools to manipulate genetic data. It is most easily installed through pip using the command below while the environment is active. 
-
-`pip install pysnptools`
-
 
 ## Formatting Summary Statistics
 
