@@ -180,7 +180,7 @@ class estimate_components(object):
         alpha_se = self.se_bootstrapper(lmdf)
             
         total_var = [np.sum(direct_variance_component),np.sum(sad_variance_component),np.sum(covar_variance_component),np.sum(decomp_gwas_se)]
-        var_props_all_pcs = np.array([np.sum(direct_variance_component),np.sum(sad_variance_component),np.sum(covar_variance_component),np.sum(decomp_gwas_se)])/np.sum(decomp_gwas[self.pc_lower_bound:])
+        var_props_all_pcs = np.array([np.sum(direct_variance_component),np.sum(sad_variance_component),np.sum(covar_variance_component),np.sum(decomp_gwas_se)])/np.sum(decomp_gwas[self.pc_lower_bound])
         var_props_bottom_pcs= np.array([np.sum(direct_variance_component[self.pc_lower_bound:]),np.sum(sad_variance_component[self.pc_lower_bound:]),np.sum(covar_variance_component[self.pc_lower_bound:]),np.sum(decomp_gwas_se[self.pc_lower_bound:])])/np.sum(decomp_gwas[self.pc_lower_bound:])
     
         colnames = ['Direct', 'SAD', 'Direct-SAD covariance', 'Error']
