@@ -80,6 +80,9 @@ class make_input_files(object):
 		self.sib_gwas = self.sib_gwas.drop_duplicates(subset = ['SNP'])
 		self.pop_gwas = self.pop_gwas.drop_duplicates(subset = ['SNP'])
 
+		self.sib_gwas = self.sib_gwas.dropna()
+		self.pop_gwas = self.pop_gwas.dropna()
+		
 		if snpset:
 			snpset = pd.read_csv(snpset, header = None)
 			snpset.columns = ['SNP']
