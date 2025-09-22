@@ -1,7 +1,8 @@
 import numpy as np
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=RuntimeWarning)
+# from pandas.errors import SettingWithCopyWarning
+# warnings.simplefilter(action='ignore', category=FutureWarning)
+# warnings.simplefilter(action='ignore', category=RuntimeWarning)
 import pandas as pd
 import sys
 import statsmodels.formula.api as smf
@@ -17,7 +18,7 @@ class estimate_components(object):
 
     def __init__(self, block_bounds, pc_genotypes, gwas_beta, gwas_se, sib_beta, sib_se, chr_pos, asc_p, thresh, outpath, outlabel,  chrom, pos_label, 
         pc_lower_bound=100, eigenvecs= None, eigenvalues = None, boot_se = 100, block_perm = True, pcs_to_test = 15, nperm = 1000):
-        
+
         self.gwas_beta = gwas_beta.reset_index(drop = True)
         self.gwas_se = gwas_se.reset_index(drop = True)
         self.sib_beta = sib_beta.reset_index(drop = True)
@@ -32,18 +33,19 @@ class estimate_components(object):
         self.outlabel = outlabel
         self.plot = 0
 
-        if pc_genotypes.all() != "":
-            self.pca(pc_genotypes)
-        else:
+        if eigenvalues is not None and type(eigenvalues) == str:
             self.eigenvalues = np.load(eigenvalues, allow_pickle = True)
             self.eigenvecs = np.load(eigenvecs, allow_pickle = True)
+        elif eigenvalues is not None:
+            self.eigenvalues = eigenvalues
+            self.eigenvecs = eigenvecs
+        else:
+            self.pca(pc_genotypes)
 
         self.alpha = 1.
         self.pc_upper_bound = self.eigenvalues.shape[0]
         self.direct_variance_component_init, self.sad_variance_component_init, self.covar_variance_component_init, self.decomp_gwas, self.decomp_sib, self.decomp_diff, self.gwas_avg_se2,self.sib_avg_se2, self.proj_gwas, self.proj_sib, self.proj_diff, self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, self.variance_nondirect_vc, self.standard_variance_component, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.beta_sum, self.alpha, self.alpha_se, self.vartotals_init, self.tau, self.nondirect_variance_component = self.estimate_components_and_alpha(self.gwas_beta, self.gwas_se,self.sib_beta,self.sib_se,self.ascertainment_p, self.thresh,self.eigenvecs, self.eigenvalues, 1, 1, self.pc_upper_bound, pc_lower_bound = self.pc_lower_bound)
         self.alpha_report = self.alpha
-        print(self.outlabel)
-        print('alpha:' + str(np.round(self.alpha_report,4)) + '(' + str(np.round(self.alpha_se,4)) + ')')
 
         self.gwas_beta = gwas_beta.reset_index(drop = True)/self.alpha_report
         self.gwas_se = gwas_se.reset_index(drop = True)/self.alpha_report
@@ -55,7 +57,7 @@ class estimate_components(object):
         self.pc_lower_bound = pc_lower_bound
         
         self.direct_variance_component, self.sad_variance_component, self.covar_variance_component, self.decomp_gwas, self.decomp_sib, self.decomp_diff, self.gwas_avg_se2,self.sib_avg_se2, self.proj_gwas, self.proj_sib, self.proj_diff, self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, self.variance_nondirect_vc, self.standard_variance_component, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.beta_sum, self.alpha, self.alpha_se_new, self.vartotals, self.tau, self.nondirect_variance_component = self.estimate_components_and_alpha(self.gwas_beta, self.gwas_se,self.sib_beta,self.sib_se, self.ascertainment_p, self.thresh,self.eigenvecs, self.eigenvalues, 0, self.tau, self.pc_upper_bound, pc_lower_bound = self.pc_lower_bound)
-        print(block_perm)
+
         if block_perm:
             block_permutation(block_bounds, chr_pos, chrom, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.ascertainment_p, self.thresh, outlabel, self.eigenvecs, self.eigenvalues, self.direct_variance_component, self.sad_variance_component, self.covar_variance_component, self.nondirect_variance_component, self.decomp_gwas, self.decomp_sib, self.decomp_diff,self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc,self.variance_nondirect_vc, outpath, pos_label, self.pcs_to_test, nperm = nperm)
         else:
@@ -120,10 +122,8 @@ class estimate_components(object):
             estimates.append(np.sqrt(np.abs(myoutput.beta[0])))
         return np.std(estimates)
 
-
     def estimate_components_and_alpha(self,gwas_beta,gwas_se,sib_beta,sib_se,ascertainment_p,thresh,eigenvecs,eigenvalues, plotter, tau,
         pc_upper_bound, pc_lower_bound = 100):
-        
         #get all necessary statistics from the population gwas
         #get gwas effects that have p values less than threshold
         gwas_beta_threshed = self.beta_p_thresh(gwas_beta, ascertainment_p, thresh)
@@ -180,7 +180,7 @@ class estimate_components(object):
         alpha_se = self.se_bootstrapper(lmdf)
             
         total_var = [np.sum(direct_variance_component),np.sum(sad_variance_component),np.sum(covar_variance_component),np.sum(decomp_gwas_se)]
-        var_props_all_pcs = np.array([np.sum(direct_variance_component),np.sum(sad_variance_component),np.sum(covar_variance_component),np.sum(decomp_gwas_se)])/np.sum(decomp_gwas[self.pc_lower_bound])
+        var_props_all_pcs = np.array([np.sum(direct_variance_component),np.sum(sad_variance_component),np.sum(covar_variance_component),np.sum(decomp_gwas_se)])/np.sum(decomp_gwas)
         var_props_bottom_pcs= np.array([np.sum(direct_variance_component[self.pc_lower_bound:]),np.sum(sad_variance_component[self.pc_lower_bound:]),np.sum(covar_variance_component[self.pc_lower_bound:]),np.sum(decomp_gwas_se[self.pc_lower_bound:])])/np.sum(decomp_gwas[self.pc_lower_bound:])
     
         colnames = ['Direct', 'SAD', 'Direct-SAD covariance', 'Error']
@@ -191,7 +191,6 @@ class estimate_components(object):
         return direct_variance_component, sad_variance_component, covar_variance_component, decomp_gwas, decomp_sib, decomp_diff, gwas_avg_se2, sib_avg_se2, proj_gwas, proj_sib, proj_diff, variance_direct_vc, variance_sad_vc, variance_covar_vc, variance_nondirect_vc, standard_variance_component, gwas_beta_threshed, gwas_se_threshed, sib_beta_threshed, sib_se_threshed, np.sum(gwas_beta_threshed[gwas_beta_threshed != 0]), alpha, alpha_se, vartotals, tau, nondirect_variance_component
 
     def pca(self, genotype_mat):
-
         pca = PCA()
         pca.fit_transform(genotype_mat)
         
@@ -212,7 +211,7 @@ class estimate_components(object):
             'proj_gwas':self.proj_gwas, 'proj_sib':self.proj_sib, 'proj_diff':self.proj_diff,
             'var_direct_vc':self.variance_direct_vc, 'var_sad_vc':self.variance_sad_vc, 'var_covar_vc':self.variance_covar_vc,
             'beta_sum':self.beta_sum, 'alpha':self.alpha_report,'alpha_se':self.alpha_se_new, 'nsnp':self.nsnp, 
-            'var_totals':self.vartotals_init}
+            'var_totals':self.vartotals_init, 'eigenvecs':self.eigenvecs,'eigenvalues':self.eigenvalues}
 
 
         
