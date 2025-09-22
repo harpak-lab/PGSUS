@@ -11,7 +11,6 @@ from permutations import block_permutation
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
-from pylr2 import regress2
 from scipy.odr import *
 
 class estimate_components(object):
