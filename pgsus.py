@@ -1,5 +1,6 @@
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
+# from pandas.errors import SettingWithCopyWarning
+# warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 import numpy as np
 import sys
@@ -79,20 +80,17 @@ parser.add_argument("--sib-effect", type=str, default = 'BETA', dest = 'SIBBETA'
 parser.add_argument("--sib-se", type=str, default = 'se', dest = 'SIBSE')
 parser.add_argument("--pval-col", type=str, default = 'P', dest = 'P')
 parser.add_argument("--pop-pval-col", type=str, default = 'P', dest = 'POP_P')
-
 parser.add_argument('--nboots', type=int, dest = 'nboots', default = 100)
 parser.add_argument("--eigenvals", type=str, default = None, dest = 'eigenvalues')
 parser.add_argument("--eigenvecs", type=str, default = None, dest = 'eigenvecs')
-
 parser.add_argument('--permutation-test', default=False, action=argparse.BooleanOptionalAction, dest = 'block_perm')
-
 parser.add_argument('--perm-pcs', type=int, dest = 'pcs_to_test', default = 100)
 parser.add_argument('--nperm', type = int, dest = 'nperm', default = 1000)
-
 parser.add_argument("--outfile-label", type=str, default = '', dest = 'outlabel')
 parser.add_argument("--out", type=str, default = './', dest = 'outpath')
 parser.add_argument('--anc-data',type=str, dest = 'anc_data',default = 'support_files/SNPalleles_1000Genomes_allsites.txt.gz')
 parser.add_argument('--block-bounds',type=str, dest = 'block_bounds',default = 'support_files/Pickrell_breakpoints_EUR.bed')
+parser.add_argument('--threshold-list',type = str,dest='threshold_list',default='1.0')
 
 args = parser.parse_args()
 genetic_file = args.genetic_file
@@ -122,8 +120,8 @@ block_perm = args.block_perm
 pcs_to_test = args.pcs_to_test
 nperm = args.nperm
 nboots = args.nboots
+threshold_list = args.threshold_list.split(',')
 
-print(block_perm)
 if __name__ == '__main__':
 
 	args = parser.parse_args()
@@ -209,37 +207,56 @@ if __name__ == '__main__':
 		stat_to_geno_df = popgwas
 
 	log.log('Beginning SAD decomposition...')
+	threshold = threshold_list[0]
 	sad = estimate_components(block_bounds, pc_genotypes, popgwas[POPBETA].astype(float), popgwas[POPSE].astype(float), \
-		sibgwas[SIBBETA].astype(float), sibgwas[SIBSE].astype(float), block_snps, asc_ps.astype(float), \
-		pval, outpath, outlabel, CHR, POS, pc_lower_bound=100, eigenvecs= eigenvecs, eigenvalues = eigenvalues, \
-		boot_se = nboots, block_perm = block_perm, pcs_to_test = pcs_to_test, nperm = nperm)
+			sibgwas[SIBBETA].astype(float), sibgwas[SIBSE].astype(float), block_snps, asc_ps.astype(float), \
+			float(threshold_list[0]), outpath, outlabel, CHR, POS, pc_lower_bound=100, eigenvecs= eigenvecs, eigenvalues = eigenvalues, \
+			boot_se = nboots, block_perm = block_perm, pcs_to_test = pcs_to_test, nperm = nperm)
 	log.log('Done.\n')
-
 	final = sad.outputs()
-	
+	eigenvecs = final['eigenvecs']
+	eigenvalues = final['eigenvalues']
+
 	log.log('Alpha estimate: ' + str(final['alpha']) + ' (' + str(final['alpha_se']) + ')\n')	
 	log.log('nSNPs passing ascertainment filter: ' + str(final['nsnp'])+'\n')	
 	
 	if outlabel != '':
-		newfile = open(outpath + '/' + outlabel + '.pval.' + str(pval) + '.alpha.txt','w')
-		alphasefile = open(outpath + '/' + outlabel + '.pval.' + str(pval) + '.alpha.se.txt','w')
-		nsnpfile = open(outpath + '/' + outlabel + '.pval.' + str(pval) + '.nsnp.txt','w')
-		final['var_totals'].to_csv(outpath + '/' + outlabel + '.pval.' + str(pval) + '.variance.totals.txt', sep = '\t')
+		newfile = open(outpath + '/' + outlabel + '.threshold.' + str(threshold) + '.alpha.txt','w')
+		alphasefile = open(outpath + '/' + outlabel + '.threshold.' + str(threshold) + '.alpha.se.txt','w')
+		nsnpfile = open(outpath + '/' + outlabel + '.threshold.' + str(threshold) + '.nsnp.txt','w')
+		final['var_totals'].to_csv(outpath + '/' + outlabel + '.threshold.' + str(threshold) + '.variance.totals.txt', sep = '\t')
 	else:
-		newfile = open(outpath + '/pval.' + str(pval) + '.alpha.txt','w')
-		nsnpfile = open(outpath + '/pval.' + str(pval) + '.nsnp.txt','w')	
-		final['var_totals'].to_csv(outpath + '/pval.' + str(pval) + '.variance.totals.txt', sep = '\t')
+		newfile = open(outpath + '/threshold.' + str(threshold) + '.alpha.txt','w')
+		nsnpfile = open(outpath + '/threshold.' + str(threshold) + '.nsnp.txt','w')	
+		final['var_totals'].to_csv(outpath + '/threshold.' + str(threshold) + '.variance.totals.txt', sep = '\t')
 	
 	newfile.write(str(final['alpha']))
 	alphasefile.write(str(final['alpha_se']))
 	nsnpfile.write(str(final['nsnp']))
+
+	if len(threshold_list) > 1:
+		for threshold in threshold_list:
+			sad = estimate_components(block_bounds, pc_genotypes, popgwas[POPBETA].astype(float), popgwas[POPSE].astype(float), \
+				sibgwas[SIBBETA].astype(float), sibgwas[SIBSE].astype(float), block_snps, asc_ps.astype(float), \
+				float(threshold), outpath, outlabel, CHR, POS, pc_lower_bound=100, eigenvecs = eigenvecs, eigenvalues = eigenvalues, \
+				boot_se = nboots, block_perm = block_perm, pcs_to_test = pcs_to_test, nperm = nperm)
+			log.log('Done.\n')
+			final = sad.outputs()
+
+			log.log('Alpha estimate: ' + str(final['alpha']) + ' (' + str(final['alpha_se']) + ')\n')	
+			log.log('nSNPs passing ascertainment filter: ' + str(final['nsnp'])+'\n')	
+			
+			if outlabel != '':
+				newfile = open(outpath + '/' + outlabel + '.threshold.' + str(threshold) + '.alpha.txt','w')
+				alphasefile = open(outpath + '/' + outlabel + '.threshold.' + str(threshold) + '.alpha.se.txt','w')
+				nsnpfile = open(outpath + '/' + outlabel + '.threshold.' + str(threshold) + '.nsnp.txt','w')
+				final['var_totals'].to_csv(outpath + '/' + outlabel + '.threshold.' + str(threshold) + '.variance.totals.txt', sep = '\t')
+			else:
+				newfile = open(outpath + '/threshold.' + str(threshold) + '.alpha.txt','w')
+				nsnpfile = open(outpath + '/threshold.' + str(threshold) + '.nsnp.txt','w')	
+				final['var_totals'].to_csv(outpath + '/threshold.' + str(threshold) + '.variance.totals.txt', sep = '\t')
+			
+			newfile.write(str(final['alpha']))
+			alphasefile.write(str(final['alpha_se']))
+			nsnpfile.write(str(final['nsnp']))
 	log.log('SAD decomposition complete.\n')	
-
-
-
-
-
-
-
-
-
