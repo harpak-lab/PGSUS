@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from pylr2 import regress2
 from scipy.odr import *
+from sys import exit
 
 class estimate_components(object):
 
@@ -32,18 +33,22 @@ class estimate_components(object):
         self.outlabel = outlabel
         self.plot = 0
 
-        if pc_genotypes != '':
-            self.pca(pc_genotypes)
-        else:
+        #if pc_genotypes != '':
+        if eigenvalues is not None and type(eigenvalues) == str:
             self.eigenvalues = np.load(eigenvalues, allow_pickle = True)
             self.eigenvecs = np.load(eigenvecs, allow_pickle = True)
+        elif eigenvalues is not None:
+            self.eigenvalues = eigenvalues
+            self.eigenvecs = eigenvecs
+        else:
+            self.pca(pc_genotypes)
 
         self.alpha = 1.
         self.pc_upper_bound = self.eigenvalues.shape[0]
         self.direct_variance_component_init, self.sad_variance_component_init, self.covar_variance_component_init, self.decomp_gwas, self.decomp_sib, self.decomp_diff, self.gwas_avg_se2,self.sib_avg_se2, self.proj_gwas, self.proj_sib, self.proj_diff, self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, self.variance_nondirect_vc, self.standard_variance_component, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.beta_sum, self.alpha, self.alpha_se, self.vartotals_init, self.tau, self.nondirect_variance_component = self.estimate_components_and_alpha(self.gwas_beta, self.gwas_se,self.sib_beta,self.sib_se,self.ascertainment_p, self.thresh,self.eigenvecs, self.eigenvalues, 1, 1, self.pc_upper_bound, pc_lower_bound = self.pc_lower_bound)
         self.alpha_report = self.alpha
-        print(self.outlabel)
-        print('alpha:' + str(np.round(self.alpha_report,4)) + '(' + str(np.round(self.alpha_se,4)) + ')')
+        # print(self.outlabel)
+        # print('alpha:' + str(np.round(self.alpha_report,4)) + '(' + str(np.round(self.alpha_se,4)) + ')')
 
         self.gwas_beta = gwas_beta.reset_index(drop = True)/self.alpha_report
         self.gwas_se = gwas_se.reset_index(drop = True)/self.alpha_report
@@ -55,7 +60,7 @@ class estimate_components(object):
         self.pc_lower_bound = pc_lower_bound
         
         self.direct_variance_component, self.sad_variance_component, self.covar_variance_component, self.decomp_gwas, self.decomp_sib, self.decomp_diff, self.gwas_avg_se2,self.sib_avg_se2, self.proj_gwas, self.proj_sib, self.proj_diff, self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, self.variance_nondirect_vc, self.standard_variance_component, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.beta_sum, self.alpha, self.alpha_se_new, self.vartotals, self.tau, self.nondirect_variance_component = self.estimate_components_and_alpha(self.gwas_beta, self.gwas_se,self.sib_beta,self.sib_se, self.ascertainment_p, self.thresh,self.eigenvecs, self.eigenvalues, 0, self.tau, self.pc_upper_bound, pc_lower_bound = self.pc_lower_bound)
-        print(block_perm)
+        # print(block_perm)
         if block_perm:
             block_permutation(block_bounds, chr_pos, chrom, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.ascertainment_p, self.thresh, outlabel, self.eigenvecs, self.eigenvalues, self.direct_variance_component, self.sad_variance_component, self.covar_variance_component, self.nondirect_variance_component, self.decomp_gwas, self.decomp_sib, self.decomp_diff,self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc,self.variance_nondirect_vc, outpath, pos_label, self.pcs_to_test, nperm = nperm)
         else:
@@ -111,6 +116,7 @@ class estimate_components(object):
         linear = Model(self.f)
         estimates = []
         for strap in range(100):
+            np.random.seed(strap) # Add random seed but use our seed list to generate it
             indices = np.random.choice(lmdf.index.tolist(), lmdf.shape[0])
             temp_lmdf = lmdf.loc[indices]
             mydata = RealData(x=temp_lmdf['sib_vc'],y=temp_lmdf['standard_vc'], sx = temp_lmdf['var_sib_vc'], sy = temp_lmdf['var_standard_vc'])
@@ -156,6 +162,8 @@ class estimate_components(object):
         covar_variance_component = decomp_gwas - decomp_diff - decomp_sib + 2*decomp_sib_se
         standard_variance_component = decomp_gwas - decomp_gwas_se
         nondirect_variance_component = (decomp_gwas - decomp_gwas_se - (decomp_sib-decomp_sib_se))
+        nondirect_per_nonerror = nondirect_variance_component/standard_variance_component
+        direct_per_nondirect = direct_variance_component/nondirect_variance_component
 
         #get variance of each variance component
         variance_direct_vc = 2*(decomp_sib_se**2)
@@ -179,19 +187,52 @@ class estimate_components(object):
         alpha_se = self.se_bootstrapper(lmdf)
             
         total_var = [np.sum(direct_variance_component),np.sum(sad_variance_component),np.sum(covar_variance_component),np.sum(decomp_gwas_se)]
-        var_props_all_pcs = np.array([np.sum(direct_variance_component),np.sum(sad_variance_component),np.sum(covar_variance_component),np.sum(decomp_gwas_se)])/np.sum(decomp_gwas[self.pc_lower_bound:])
-        var_props_bottom_pcs= np.array([np.sum(direct_variance_component[self.pc_lower_bound:]),np.sum(sad_variance_component[self.pc_lower_bound:]),np.sum(covar_variance_component[self.pc_lower_bound:]),np.sum(decomp_gwas_se[self.pc_lower_bound:])])/np.sum(decomp_gwas[self.pc_lower_bound:])
-    
-        colnames = ['Direct', 'SAD', 'Direct-SAD covariance', 'Error']
-        rownames = ['All_PCs', 'PC ' + str(self.pc_lower_bound) + '+']
 
-        vartotals = pd.DataFrame(np.vstack((var_props_all_pcs,var_props_bottom_pcs)), index = rownames, columns = colnames).T
+        nondirect_per_nonerror = nondirect_variance_component/standard_variance_component
+        direct_per_nondirect = direct_variance_component/nondirect_variance_component
+
+        # ALL PCs
+        var_props_all_pcs = np.array([np.sum(direct_variance_component)/np.sum(decomp_gwas),
+            np.sum(sad_variance_component)/np.sum(decomp_gwas),
+            np.sum(covar_variance_component)/np.sum(decomp_gwas),
+            np.sum(nondirect_variance_component)/np.sum(decomp_gwas),
+            np.sum(decomp_gwas_se)/np.sum(decomp_gwas),
+            np.sum(nondirect_variance_component)/np.sum(standard_variance_component),
+            np.sum(direct_variance_component)/np.sum(nondirect_variance_component)])
+        # TOP PCs
+        var_props_top_pcs = np.array([np.sum(direct_variance_component[:self.pc_lower_bound])/np.sum(decomp_gwas[:self.pc_lower_bound]),
+            np.sum(sad_variance_component[:self.pc_lower_bound])/np.sum(decomp_gwas[:self.pc_lower_bound]),
+            np.sum(covar_variance_component[:self.pc_lower_bound])/np.sum(decomp_gwas[:self.pc_lower_bound]),
+            np.sum(nondirect_variance_component[:self.pc_lower_bound])/np.sum(decomp_gwas[:self.pc_lower_bound]),
+            np.sum(decomp_gwas_se[:self.pc_lower_bound])/np.sum(decomp_gwas[:self.pc_lower_bound]),
+            np.sum(nondirect_variance_component[:self.pc_lower_bound])/np.sum(standard_variance_component[:self.pc_lower_bound]),
+            np.sum(direct_variance_component[:self.pc_lower_bound])/np.sum(nondirect_variance_component[:self.pc_lower_bound])])
+        # BOTTOM PCs
+        var_props_bottom_pcs = np.array([np.sum(direct_variance_component[self.pc_lower_bound:])/np.sum(decomp_gwas[self.pc_lower_bound:]),
+            np.sum(sad_variance_component[self.pc_lower_bound:])/np.sum(decomp_gwas[self.pc_lower_bound:]),
+            np.sum(covar_variance_component[self.pc_lower_bound:])/np.sum(decomp_gwas[self.pc_lower_bound:]),
+            np.sum(nondirect_variance_component[self.pc_lower_bound:])/np.sum(decomp_gwas[self.pc_lower_bound:]),
+            np.sum(decomp_gwas_se[self.pc_lower_bound:])/np.sum(decomp_gwas[self.pc_lower_bound:]),
+            np.sum(nondirect_variance_component[self.pc_lower_bound:])/np.sum(standard_variance_component[self.pc_lower_bound:]),
+            np.sum(direct_variance_component[self.pc_lower_bound:])/np.sum(nondirect_variance_component[self.pc_lower_bound:])])
+        # TOP 6
+        var_props_top6_pcs = np.array([np.sum(direct_variance_component[:6]),
+            np.sum(sad_variance_component[:6])/np.sum(decomp_gwas[:6]),
+            np.sum(covar_variance_component[:6])/np.sum(decomp_gwas[:6]),
+            np.sum(nondirect_variance_component[:6])/np.sum(decomp_gwas[:6]),
+            np.sum(decomp_gwas_se[:6])/np.sum(decomp_gwas[:6]),
+            np.sum(nondirect_variance_component[:6])/np.sum(standard_variance_component[:6]),
+            np.sum(direct_variance_component[:6])/np.sum(nondirect_variance_component[:6])])
+        
+        colnames = ['Direct', 'SAD', 'Direct-SAD covariance', 'Non-direct', 'Error', 'Non-direct per non-error', 'Direct per non-direct']
+        rownames = ['All_PCs', f'PC_{str(self.pc_lower_bound)}+', f'PC1_to_{str(self.pc_lower_bound)}', 'PC1_to_6']
+
+        vartotals = pd.DataFrame(np.vstack((var_props_all_pcs, var_props_bottom_pcs, var_props_top_pcs, var_props_top6_pcs)), index = rownames, columns = colnames).T
 
         return direct_variance_component, sad_variance_component, covar_variance_component, decomp_gwas, decomp_sib, decomp_diff, gwas_avg_se2, sib_avg_se2, proj_gwas, proj_sib, proj_diff, variance_direct_vc, variance_sad_vc, variance_covar_vc, variance_nondirect_vc, standard_variance_component, gwas_beta_threshed, gwas_se_threshed, sib_beta_threshed, sib_se_threshed, np.sum(gwas_beta_threshed[gwas_beta_threshed != 0]), alpha, alpha_se, vartotals, tau, nondirect_variance_component
 
     def pca(self, genotype_mat):
-
-        pca = PCA()
+        pca = PCA(random_state = 314159)
         pca.fit_transform(genotype_mat)
         
         self.eigenvecs = pca.components_.T
@@ -211,7 +252,7 @@ class estimate_components(object):
             'proj_gwas':self.proj_gwas, 'proj_sib':self.proj_sib, 'proj_diff':self.proj_diff,
             'var_direct_vc':self.variance_direct_vc, 'var_sad_vc':self.variance_sad_vc, 'var_covar_vc':self.variance_covar_vc,
             'beta_sum':self.beta_sum, 'alpha':self.alpha_report,'alpha_se':self.alpha_se_new, 'nsnp':self.nsnp, 
-            'var_totals':self.vartotals_init}
+            'var_totals':self.vartotals_init, 'eigenvecs':self.eigenvecs,'eigenvalues':self.eigenvalues}
 
 
         
