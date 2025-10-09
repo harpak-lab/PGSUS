@@ -26,6 +26,7 @@ class main_figures(object):
         self.label_dict[0] = 'Rank mean'
 
     def run(self):
+        print(self.analyses)
         if 'alpha_pillars' in self.analyses:
             self.plot_alphapillars()
         if 'decomps' in self.analyses:
@@ -171,17 +172,39 @@ class main_figures(object):
 
     def plot_decomps(self):
         pcs=6
-        palette = {'sad':'#ca3a27', 'direct':'#4B9C79', 'covar':'#D1BA41'}
-        fig, ax = plt.subplots(nrows = 2, ncols = 3, figsize = ((3*pcs*0.8+1),10))
-        df = pd.read_csv('../cache/component_inputs/giant/giant_height_rescaled/giant.1kg.eur.block.permutation.stats.pval.1.0.txt', sep = '\t')
+        palette = {'sad':'#ca3a27', 'direct':'#4B9C79', 'covar':'#D1BA41', 'nondirect':'#8a461b'}
+        fig, ax = plt.subplots(nrows = 2, ncols = 4, figsize = ((4*pcs*0.8+1),10))
+        
+        #top left panel
+        df = pd.read_csv('../cache/component_inputs/nondirect/giant/giant_height.1kg.eur.block.permutation.stats.pval.1.0.txt', sep = '\t')
         col_nums = np.array([int(i+1) for i in range(pcs)])
         df = df.set_index('Unnamed: 0')
-        ax[0,0].fill_between(col_nums-0.25, df.loc['upper975_perm_direct'].tolist()[:pcs], df.loc['lower025_perm_direct'].tolist()[:pcs], where=(df.loc['upper975_perm_direct'].tolist()[:pcs] > df.loc['lower025_perm_direct'].tolist()[:pcs]), facecolor=palette['direct'], alpha=0.2, edgecolor = 'none')
-        ax[0,0].fill_between(col_nums+0.25, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
-        ax[0,0].fill_between(col_nums, df.loc['upper975_perm_sad'].tolist()[:pcs], df.loc['lower025_perm_sad'].tolist()[:pcs], where=(df.loc['upper975_perm_sad'].tolist()[:pcs] > df.loc['lower025_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[0,0].fill_between(col_nums-0.25, df.loc['upper95_perm_direct'].tolist()[:pcs], df.loc['lower0_perm_direct'].tolist()[:pcs], where=(df.loc['upper95_perm_direct'].tolist()[:pcs] > df.loc['lower0_perm_direct'].tolist()[:pcs]), facecolor=palette['direct'], alpha=0.2, edgecolor = 'none')
+        ax[0,0].fill_between(col_nums-0.125, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[0,0].fill_between(col_nums+0.125, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
+        ax[0,0].fill_between(col_nums+0.25, df.loc['upper975_perm_nondirect'].tolist()[:pcs], df.loc['lower025_perm_nondirect'].tolist()[:pcs], where=(df.loc['upper975_perm_nondirect'].tolist()[:pcs] > df.loc['lower025_perm_nondirect'].tolist()[:pcs]), facecolor=palette['nondirect'], alpha=0.2, edgecolor = 'none')
+
         ax[0,0].scatter(col_nums-0.25, df.loc['direct_vc_estimate'].tolist()[:pcs], color = palette['direct'], label='direct variance')
-        ax[0,0].scatter(col_nums, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
-        ax[0,0].scatter(col_nums+0.25, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD variance')
+        ax[0,0].scatter(col_nums-0.125, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
+        ax[0,0].scatter(col_nums+0.125, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD covariance')
+        ax[0,0].scatter(col_nums+0.25, df.loc['nondirect_vc_estimate'].tolist()[:pcs], color = palette['nondirect'], label='nondirect variance')
+        
+        df = df[df.columns[:6]]
+        df.columns = [i for i in range(6)]
+        direct_sig_cols = df.columns[df.loc['direct_vc_pvals'][:6] < 0.05]
+        sad_sig_cols = df.columns[df.loc['sad_vc_pvals'][:6] < 0.05]
+        covar_sig_cols = df.columns[df.loc['covar_vc_pvals'][:6] < 0.025]
+        nondirect_sig_cols = df.columns[df.loc['nondirect_vc_pvals'][:6] < 0.025]
+
+        if len(direct_sig_cols) != 0:
+            ax[0,0].scatter(col_nums[direct_sig_cols]-0.25, df.loc['direct_vc_estimate'][direct_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['direct'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(sad_sig_cols) != 0:
+            ax[0,0].scatter(col_nums[sad_sig_cols]-0.125, df.loc['sad_vc_estimate'][sad_sig_cols].tolist(), marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['sad'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(covar_sig_cols) != 0:
+            ax[0,0].scatter(col_nums[covar_sig_cols]+0.125, df.loc['covar_vc_estimate'][covar_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['covar'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(nondirect_sig_cols) != 0:
+            ax[0,0].scatter(col_nums[nondirect_sig_cols]+0.25, df.loc['nondirect_vc_estimate'][nondirect_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['nondirect'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+
         upper_y = ax[0,0].get_ylim()[1]
         lower_y = ax[0,0].get_ylim()[0]
         asterisk_y = np.array([upper_y for i in range(df.shape[1])])
@@ -191,17 +214,37 @@ class main_figures(object):
         ax[0,0].set_xticks([int(i+1) for i in range(pcs)])
         ax[0,0].set_xticklabels(['PC' + str(i+1) for i in range(pcs)])
         ax[0,0].set_xlim(0.5, pcs+0.5)
-        ax[0,0].set_ylabel('Component / Total PGS Variance')
         
-        #top middle forced vital capacity plink.wc ukb
-        df = pd.read_csv('../cache/component_inputs/wc/plink.wc.1kg.eur.sps23.fvc.aperm.1K.to.1M.block.permutation.stats.pval.0.001.txt', sep = '\t').set_index('Unnamed: 0')
+        #top middle panel
+        df = pd.read_csv('../cache/component_inputs/nondirect/giant2022/giant.eur.1kg.eur.block.permutation.stats.pval.1.0.txt', sep = '\t')
         col_nums = np.array([int(i+1) for i in range(pcs)])
+        df = df.set_index('Unnamed: 0')
         ax[0,1].fill_between(col_nums-0.25, df.loc['upper95_perm_direct'].tolist()[:pcs], df.loc['lower0_perm_direct'].tolist()[:pcs], where=(df.loc['upper95_perm_direct'].tolist()[:pcs] > df.loc['lower0_perm_direct'].tolist()[:pcs]), facecolor=palette['direct'], alpha=0.2, edgecolor = 'none')
-        ax[0,1].fill_between(col_nums+0.25, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
-        ax[0,1].fill_between(col_nums, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[0,1].fill_between(col_nums-0.125, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[0,1].fill_between(col_nums+0.125, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
+        ax[0,1].fill_between(col_nums+0.25, df.loc['upper975_perm_nondirect'].tolist()[:pcs], df.loc['lower025_perm_nondirect'].tolist()[:pcs], where=(df.loc['upper975_perm_nondirect'].tolist()[:pcs] > df.loc['lower025_perm_nondirect'].tolist()[:pcs]), facecolor=palette['nondirect'], alpha=0.2, edgecolor = 'none')
+
         ax[0,1].scatter(col_nums-0.25, df.loc['direct_vc_estimate'].tolist()[:pcs], color = palette['direct'], label='direct variance')
-        ax[0,1].scatter(col_nums, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
-        ax[0,1].scatter(col_nums+0.25, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD variance')
+        ax[0,1].scatter(col_nums-0.125, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
+        ax[0,1].scatter(col_nums+0.125, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD covariance')
+        ax[0,1].scatter(col_nums+0.25, df.loc['nondirect_vc_estimate'].tolist()[:pcs], color = palette['nondirect'], label='nondirect variance')
+        
+        df = df[df.columns[:6]]
+        df.columns = [i for i in range(6)]
+        direct_sig_cols = df.columns[df.loc['direct_vc_pvals'][:6] < 0.05]
+        sad_sig_cols = df.columns[df.loc['sad_vc_pvals'][:6] < 0.05]
+        covar_sig_cols = df.columns[df.loc['covar_vc_pvals'][:6] < 0.025]
+        nondirect_sig_cols = df.columns[df.loc['nondirect_vc_pvals'][:6] < 0.025]
+
+        if len(direct_sig_cols) != 0:
+            ax[0,1].scatter(col_nums[direct_sig_cols]-0.25, df.loc['direct_vc_estimate'][direct_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['direct'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(sad_sig_cols) != 0:
+            ax[0,1].scatter(col_nums[sad_sig_cols]-0.125, df.loc['sad_vc_estimate'][sad_sig_cols].tolist(), marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['sad'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(covar_sig_cols) != 0:
+            ax[0,1].scatter(col_nums[covar_sig_cols]+0.125, df.loc['covar_vc_estimate'][covar_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['covar'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(nondirect_sig_cols) != 0:
+            ax[0,1].scatter(col_nums[nondirect_sig_cols]+0.25, df.loc['nondirect_vc_estimate'][nondirect_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['nondirect'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+
         upper_y = ax[0,1].get_ylim()[1]
         lower_y = ax[0,1].get_ylim()[0]
         asterisk_y = np.array([upper_y for i in range(df.shape[1])])
@@ -211,17 +254,36 @@ class main_figures(object):
         ax[0,1].set_xticks([int(i+1) for i in range(pcs)])
         ax[0,1].set_xticklabels(['PC' + str(i+1) for i in range(pcs)])
         ax[0,1].set_xlim(0.5, pcs+0.5)
-        ax[0,1].set_ylabel('Component / Total PGS Variance')
 
-        #top right bmi plink.wc ukb - 1kg all
-        df = pd.read_csv('../cache/component_inputs/wc/plink.wc.1kg.all.sps23.bmi.aperm.1K.to.1M.block.permutation.stats.pval.1e-05.txt', sep = '\t').set_index('Unnamed: 0')
+        #okbay
+        df = pd.read_csv('../cache/component_inputs/nondirect/okbay2022/okbay.1kg.eur.block.permutation.stats.pval.0.001.txt', sep = '\t').set_index('Unnamed: 0')
         col_nums = np.array([int(i+1) for i in range(pcs)])
+
         ax[0,2].fill_between(col_nums-0.25, df.loc['upper95_perm_direct'].tolist()[:pcs], df.loc['lower0_perm_direct'].tolist()[:pcs], where=(df.loc['upper95_perm_direct'].tolist()[:pcs] > df.loc['lower0_perm_direct'].tolist()[:pcs]), facecolor=palette['direct'], alpha=0.2, edgecolor = 'none')
-        ax[0,2].fill_between(col_nums+0.25, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
-        ax[0,2].fill_between(col_nums, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[0,2].fill_between(col_nums-0.125, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[0,2].fill_between(col_nums+0.125, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
+        ax[0,2].fill_between(col_nums+0.25, df.loc['upper975_perm_nondirect'].tolist()[:pcs], df.loc['lower025_perm_nondirect'].tolist()[:pcs], where=(df.loc['upper975_perm_nondirect'].tolist()[:pcs] > df.loc['lower025_perm_nondirect'].tolist()[:pcs]), facecolor=palette['nondirect'], alpha=0.2, edgecolor = 'none')
+
         ax[0,2].scatter(col_nums-0.25, df.loc['direct_vc_estimate'].tolist()[:pcs], color = palette['direct'], label='direct variance')
-        ax[0,2].scatter(col_nums, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
-        ax[0,2].scatter(col_nums+0.25, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD variance')
+        ax[0,2].scatter(col_nums-0.125, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
+        ax[0,2].scatter(col_nums+0.125, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD covariance')
+        ax[0,2].scatter(col_nums+0.25, df.loc['nondirect_vc_estimate'].tolist()[:pcs], color = palette['nondirect'], label='nondirect variance')
+        df = df[df.columns[:6]]
+        df.columns = [i for i in range(6)]
+        direct_sig_cols = df.columns[df.loc['direct_vc_pvals'][:6] < 0.05]
+        sad_sig_cols = df.columns[df.loc['sad_vc_pvals'][:6] < 0.05]
+        covar_sig_cols = df.columns[df.loc['covar_vc_pvals'][:6] < 0.025]
+        nondirect_sig_cols = df.columns[df.loc['nondirect_vc_pvals'][:6] < 0.025]
+
+        if len(direct_sig_cols) != 0:
+            ax[0,2].scatter(col_nums[direct_sig_cols]-0.25, df.loc['direct_vc_estimate'][direct_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['direct'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(sad_sig_cols) != 0:
+            ax[0,2].scatter(col_nums[sad_sig_cols]-0.125, df.loc['sad_vc_estimate'][sad_sig_cols].tolist(), marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['sad'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(covar_sig_cols) != 0:
+            ax[0,2].scatter(col_nums[covar_sig_cols]+0.125, df.loc['covar_vc_estimate'][covar_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['covar'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(nondirect_sig_cols) != 0:
+            ax[0,2].scatter(col_nums[nondirect_sig_cols]+0.25, df.loc['nondirect_vc_estimate'][nondirect_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['nondirect'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+
         upper_y = ax[0,2].get_ylim()[1]
         lower_y = ax[0,2].get_ylim()[0]
         asterisk_y = np.array([upper_y for i in range(df.shape[1])])
@@ -231,17 +293,37 @@ class main_figures(object):
         ax[0,2].set_xticks([int(i+1) for i in range(pcs)])
         ax[0,2].set_xticklabels(['PC' + str(i+1) for i in range(pcs)])
         ax[0,2].set_xlim(0.5, pcs+0.5)
-        ax[0,2].set_ylabel('Component / Total PGS Variance')
 
-        #bottom left EA plink.wc ukb
-        df = pd.read_csv('../cache/component_inputs/wc/plink.wc.1kg.eur.sps23.years_schooling.aperm.1K.to.1M.block.permutation.stats.pval.1.0.txt', sep = '\t').set_index('Unnamed: 0')
+
+        # bmi plink.wc ukb - 1kg all
+        df = pd.read_csv('../cache/component_inputs/nondirect/wc/plink.wc.1kg.all.sps23.bmi.aperm.1K.to.1M.block.permutation.stats.pval.1e-05.txt', sep = '\t').set_index('Unnamed: 0')
         col_nums = np.array([int(i+1) for i in range(pcs)])
+
         ax[1,0].fill_between(col_nums-0.25, df.loc['upper95_perm_direct'].tolist()[:pcs], df.loc['lower0_perm_direct'].tolist()[:pcs], where=(df.loc['upper95_perm_direct'].tolist()[:pcs] > df.loc['lower0_perm_direct'].tolist()[:pcs]), facecolor=palette['direct'], alpha=0.2, edgecolor = 'none')
-        ax[1,0].fill_between(col_nums+0.25, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
-        ax[1,0].fill_between(col_nums, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[1,0].fill_between(col_nums-0.125, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[1,0].fill_between(col_nums+0.125, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
+        ax[1,0].fill_between(col_nums+0.25, df.loc['upper975_perm_nondirect'].tolist()[:pcs], df.loc['lower025_perm_nondirect'].tolist()[:pcs], where=(df.loc['upper975_perm_nondirect'].tolist()[:pcs] > df.loc['lower025_perm_nondirect'].tolist()[:pcs]), facecolor=palette['nondirect'], alpha=0.2, edgecolor = 'none')
+
         ax[1,0].scatter(col_nums-0.25, df.loc['direct_vc_estimate'].tolist()[:pcs], color = palette['direct'], label='direct variance')
-        ax[1,0].scatter(col_nums, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
-        ax[1,0].scatter(col_nums+0.25, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD variance')
+        ax[1,0].scatter(col_nums-0.125, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
+        ax[1,0].scatter(col_nums+0.125, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD covariance')
+        ax[1,0].scatter(col_nums+0.25, df.loc['nondirect_vc_estimate'].tolist()[:pcs], color = palette['nondirect'], label='nondirect variance')
+        df = df[df.columns[:6]]
+        df.columns = [i for i in range(6)]
+        direct_sig_cols = df.columns[df.loc['direct_vc_pvals'][:6] < 0.05]
+        sad_sig_cols = df.columns[df.loc['sad_vc_pvals'][:6] < 0.05]
+        covar_sig_cols = df.columns[df.loc['covar_vc_pvals'][:6] < 0.025]
+        nondirect_sig_cols = df.columns[df.loc['nondirect_vc_pvals'][:6] < 0.025]
+
+        if len(direct_sig_cols) != 0:
+            ax[1,0].scatter(col_nums[direct_sig_cols]-0.25, df.loc['direct_vc_estimate'][direct_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['direct'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(sad_sig_cols) != 0:
+            ax[1,0].scatter(col_nums[sad_sig_cols]-0.125, df.loc['sad_vc_estimate'][sad_sig_cols].tolist(), marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['sad'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(covar_sig_cols) != 0:
+            ax[1,0].scatter(col_nums[covar_sig_cols]+0.125, df.loc['covar_vc_estimate'][covar_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['covar'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(nondirect_sig_cols) != 0:
+            ax[1,0].scatter(col_nums[nondirect_sig_cols]+0.25, df.loc['nondirect_vc_estimate'][nondirect_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['nondirect'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+
         upper_y = ax[1,0].get_ylim()[1]
         lower_y = ax[1,0].get_ylim()[0]
         asterisk_y = np.array([upper_y for i in range(df.shape[1])])
@@ -251,18 +333,38 @@ class main_figures(object):
         ax[1,0].set_xticks([int(i+1) for i in range(pcs)])
         ax[1,0].set_xticklabels(['PC' + str(i+1) for i in range(pcs)])
         ax[1,0].set_xlim(0.5, pcs+0.5)
-        ax[1,0].set_ylabel('Component / Total PGS Variance')
 
 
-        #bottom middle EA plink.wc ukb
-        df = pd.read_csv('../cache/component_inputs/bolt/bolt.nopcs.1kg.eur.years_schooling.block.permutation.stats.pval.1.0.txt', sep = '\t').set_index('Unnamed: 0')
+        #top right forced vital capacity plink.wc ukb
+        df = pd.read_csv('../cache/component_inputs/nondirect/wc/plink.wc.1kg.eur.sps23.fvc.aperm.1K.to.1M.block.permutation.stats.pval.0.001.txt', sep = '\t').set_index('Unnamed: 0')
         col_nums = np.array([int(i+1) for i in range(pcs)])
+        
         ax[1,1].fill_between(col_nums-0.25, df.loc['upper95_perm_direct'].tolist()[:pcs], df.loc['lower0_perm_direct'].tolist()[:pcs], where=(df.loc['upper95_perm_direct'].tolist()[:pcs] > df.loc['lower0_perm_direct'].tolist()[:pcs]), facecolor=palette['direct'], alpha=0.2, edgecolor = 'none')
-        ax[1,1].fill_between(col_nums+0.25, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
-        ax[1,1].fill_between(col_nums, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[1,1].fill_between(col_nums-0.125, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[1,1].fill_between(col_nums+0.125, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
+        ax[1,1].fill_between(col_nums+0.25, df.loc['upper975_perm_nondirect'].tolist()[:pcs], df.loc['lower025_perm_nondirect'].tolist()[:pcs], where=(df.loc['upper975_perm_nondirect'].tolist()[:pcs] > df.loc['lower025_perm_nondirect'].tolist()[:pcs]), facecolor=palette['nondirect'], alpha=0.2, edgecolor = 'none')
+
         ax[1,1].scatter(col_nums-0.25, df.loc['direct_vc_estimate'].tolist()[:pcs], color = palette['direct'], label='direct variance')
-        ax[1,1].scatter(col_nums, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
-        ax[1,1].scatter(col_nums+0.25, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD variance')
+        ax[1,1].scatter(col_nums-0.125, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
+        ax[1,1].scatter(col_nums+0.125, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD covariance')
+        ax[1,1].scatter(col_nums+0.25, df.loc['nondirect_vc_estimate'].tolist()[:pcs], color = palette['nondirect'], label='nondirect variance')
+
+        df = df[df.columns[:6]]
+        df.columns = [i for i in range(6)]
+        direct_sig_cols = df.columns[df.loc['direct_vc_pvals'][:6] < 0.05]
+        sad_sig_cols = df.columns[df.loc['sad_vc_pvals'][:6] < 0.05]
+        covar_sig_cols = df.columns[df.loc['covar_vc_pvals'][:6] < 0.025]
+        nondirect_sig_cols = df.columns[df.loc['nondirect_vc_pvals'][:6] < 0.025]
+
+        if len(direct_sig_cols) != 0:
+            ax[1,1].scatter(col_nums[direct_sig_cols]-0.25, df.loc['direct_vc_estimate'][direct_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['direct'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(sad_sig_cols) != 0:
+            ax[1,1].scatter(col_nums[sad_sig_cols]-0.125, df.loc['sad_vc_estimate'][sad_sig_cols].tolist(), marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['sad'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(covar_sig_cols) != 0:
+            ax[1,1].scatter(col_nums[covar_sig_cols]+0.125, df.loc['covar_vc_estimate'][covar_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['covar'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(nondirect_sig_cols) != 0:
+            ax[1,1].scatter(col_nums[nondirect_sig_cols]+0.25, df.loc['nondirect_vc_estimate'][nondirect_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['nondirect'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+
         upper_y = ax[1,1].get_ylim()[1]
         lower_y = ax[1,1].get_ylim()[0]
         asterisk_y = np.array([upper_y for i in range(df.shape[1])])
@@ -272,16 +374,37 @@ class main_figures(object):
         ax[1,1].set_xticks([int(i+1) for i in range(pcs)])
         ax[1,1].set_xticklabels(['PC' + str(i+1) for i in range(pcs)])
         ax[1,1].set_xlim(0.5, pcs+0.5)
-        ax[1,1].set_ylabel('Component / Total PGS Variance')
 
-        df = pd.read_csv('../cache/component_inputs/wc/plink.wc.1kg.all.sps23.waist_circ.aperm.1K.to.1M.block.permutation.stats.pval.1e-08.txt', sep = '\t').set_index('Unnamed: 0')
+
+        #EA plink.wc ukb
+        df = pd.read_csv('../cache/component_inputs/nondirect/wc/plink.wc.1kg.eur.sps23.years_schooling.aperm.1K.to.1M.block.permutation.stats.pval.1.0.txt', sep = '\t').set_index('Unnamed: 0')
         col_nums = np.array([int(i+1) for i in range(pcs)])
+
         ax[1,2].fill_between(col_nums-0.25, df.loc['upper95_perm_direct'].tolist()[:pcs], df.loc['lower0_perm_direct'].tolist()[:pcs], where=(df.loc['upper95_perm_direct'].tolist()[:pcs] > df.loc['lower0_perm_direct'].tolist()[:pcs]), facecolor=palette['direct'], alpha=0.2, edgecolor = 'none')
-        ax[1,2].fill_between(col_nums+0.25, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
-        ax[1,2].fill_between(col_nums, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[1,2].fill_between(col_nums-0.125, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[1,2].fill_between(col_nums+0.125, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
+        ax[1,2].fill_between(col_nums+0.25, df.loc['upper975_perm_nondirect'].tolist()[:pcs], df.loc['lower025_perm_nondirect'].tolist()[:pcs], where=(df.loc['upper975_perm_nondirect'].tolist()[:pcs] > df.loc['lower025_perm_nondirect'].tolist()[:pcs]), facecolor=palette['nondirect'], alpha=0.2, edgecolor = 'none')
+
         ax[1,2].scatter(col_nums-0.25, df.loc['direct_vc_estimate'].tolist()[:pcs], color = palette['direct'], label='direct variance')
-        ax[1,2].scatter(col_nums, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
-        ax[1,2].scatter(col_nums+0.25, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD variance')
+        ax[1,2].scatter(col_nums-0.125, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
+        ax[1,2].scatter(col_nums+0.125, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD covariance')
+        ax[1,2].scatter(col_nums+0.25, df.loc['nondirect_vc_estimate'].tolist()[:pcs], color = palette['nondirect'], label='nondirect variance')
+        df = df[df.columns[:6]]
+        df.columns = [i for i in range(6)]
+        direct_sig_cols = df.columns[df.loc['direct_vc_pvals'][:6] < 0.05]
+        sad_sig_cols = df.columns[df.loc['sad_vc_pvals'][:6] < 0.05]
+        covar_sig_cols = df.columns[df.loc['covar_vc_pvals'][:6] < 0.025]
+        nondirect_sig_cols = df.columns[df.loc['nondirect_vc_pvals'][:6] < 0.025]
+
+        if len(direct_sig_cols) != 0:
+            ax[1,2].scatter(col_nums[direct_sig_cols]-0.25, df.loc['direct_vc_estimate'][direct_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['direct'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(sad_sig_cols) != 0:
+            ax[1,2].scatter(col_nums[sad_sig_cols]-0.125, df.loc['sad_vc_estimate'][sad_sig_cols].tolist(), marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['sad'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(covar_sig_cols) != 0:
+            ax[1,2].scatter(col_nums[covar_sig_cols]+0.125, df.loc['covar_vc_estimate'][covar_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['covar'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(nondirect_sig_cols) != 0:
+            ax[1,2].scatter(col_nums[nondirect_sig_cols]+0.25, df.loc['nondirect_vc_estimate'][nondirect_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['nondirect'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+
         upper_y = ax[1,2].get_ylim()[1]
         lower_y = ax[1,2].get_ylim()[0]
         asterisk_y = np.array([upper_y for i in range(df.shape[1])])
@@ -291,7 +414,47 @@ class main_figures(object):
         ax[1,2].set_xticks([int(i+1) for i in range(pcs)])
         ax[1,2].set_xticklabels(['PC' + str(i+1) for i in range(pcs)])
         ax[1,2].set_xlim(0.5, pcs+0.5)
-        ax[1,2].set_ylabel('Component / Total PGS Variance')
+
+        #bottom center
+        df = pd.read_csv('../cache/component_inputs/nondirect/akbari2024/akbari2024.overall_health.block.permutation.stats.pval.1.0.txt', sep = '\t').set_index('Unnamed: 0')
+        col_nums = np.array([int(i+1) for i in range(pcs)])
+        
+        ax[1,3].fill_between(col_nums-0.25, df.loc['upper95_perm_direct'].tolist()[:pcs], df.loc['lower0_perm_direct'].tolist()[:pcs], where=(df.loc['upper95_perm_direct'].tolist()[:pcs] > df.loc['lower0_perm_direct'].tolist()[:pcs]), facecolor=palette['direct'], alpha=0.2, edgecolor = 'none')
+        ax[1,3].fill_between(col_nums-0.125, df.loc['upper95_perm_sad'].tolist()[:pcs], df.loc['lower0_perm_sad'].tolist()[:pcs], where=(df.loc['upper95_perm_sad'].tolist()[:pcs] > df.loc['lower0_perm_sad'].tolist()[:pcs]), facecolor=palette['sad'], alpha=0.2, edgecolor = 'none')
+        ax[1,3].fill_between(col_nums+0.125, df.loc['upper975_perm_covar'].tolist()[:pcs], df.loc['lower025_perm_covar'].tolist()[:pcs], where=(df.loc['upper975_perm_covar'].tolist()[:pcs] > df.loc['lower025_perm_covar'].tolist()[:pcs]), facecolor=palette['covar'], alpha=0.2, edgecolor = 'none')
+        ax[1,3].fill_between(col_nums+0.25, df.loc['upper975_perm_nondirect'].tolist()[:pcs], df.loc['lower025_perm_nondirect'].tolist()[:pcs], where=(df.loc['upper975_perm_nondirect'].tolist()[:pcs] > df.loc['lower025_perm_nondirect'].tolist()[:pcs]), facecolor=palette['nondirect'], alpha=0.2, edgecolor = 'none')
+
+        ax[1,3].scatter(col_nums-0.25, df.loc['direct_vc_estimate'].tolist()[:pcs], color = palette['direct'], label='direct variance')
+        ax[1,3].scatter(col_nums-0.125, df.loc['sad_vc_estimate'].tolist()[:pcs], color = palette['sad'], label='SAD variance')
+        ax[1,3].scatter(col_nums+0.125, df.loc['covar_vc_estimate'].tolist()[:pcs], color = palette['covar'], label='direct-SAD covariance')
+        ax[1,3].scatter(col_nums+0.25, df.loc['nondirect_vc_estimate'].tolist()[:pcs], color = palette['nondirect'], label='nondirect variance')
+        df = df[df.columns[:6]]
+        df.columns = [i for i in range(6)]
+        direct_sig_cols = df.columns[df.loc['direct_vc_pvals'][:6] < 0.05]
+        sad_sig_cols = df.columns[df.loc['sad_vc_pvals'][:6] < 0.05]
+        covar_sig_cols = df.columns[df.loc['covar_vc_pvals'][:6] < 0.025]
+        nondirect_sig_cols = df.columns[df.loc['nondirect_vc_pvals'][:6] < 0.025]
+
+        if len(direct_sig_cols) != 0:
+            ax[1,3].scatter(col_nums[direct_sig_cols]-0.25, df.loc['direct_vc_estimate'][direct_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['direct'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(sad_sig_cols) != 0:
+            ax[1,3].scatter(col_nums[sad_sig_cols]-0.125, df.loc['sad_vc_estimate'][sad_sig_cols].tolist(), marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['sad'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(covar_sig_cols) != 0:
+            ax[1,3].scatter(col_nums[covar_sig_cols]+0.125, df.loc['covar_vc_estimate'][covar_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['covar'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+        if len(nondirect_sig_cols) != 0:
+            ax[1,3].scatter(col_nums[nondirect_sig_cols]+0.25, df.loc['nondirect_vc_estimate'][nondirect_sig_cols], marker = 'o', s = 200, facecolor = 'none', edgecolor = palette['nondirect'], linewidth = 2, linestyle = (0, (1, 1)), label = '')
+
+        upper_y = ax[1,3].get_ylim()[1]
+        lower_y = ax[1,3].get_ylim()[0]
+        asterisk_y = np.array([upper_y for i in range(df.shape[1])])
+        ax[1,3].hlines(0, 0, np.max(col_nums)+1, 'grey','-', zorder = 0)
+        for i in col_nums:
+            ax[1,3].vlines(i+0.5, lower_y, upper_y, 'grey', 'dotted', zorder = 0)
+        ax[1,3].set_xticks([int(i+1) for i in range(pcs)])
+        ax[1,3].set_xticklabels(['PC' + str(i+1) for i in range(pcs)])
+        ax[1,3].set_xlim(0.5, pcs+0.5)
+
+        ax[0,3].axis('off')
         sns.despine()
         plt.tight_layout()
         plt.savefig('../figures/main_text/fig.significant.component.main.examples.pdf')
@@ -380,6 +543,61 @@ class main_figures(object):
         plt.tight_layout()
         plt.savefig('../figures/main_text/waist_circ.all.PC1.v.PC2.pdf')
         plt.clf()
+        #plot okbay
+        labeldata = pd.read_csv('../cache/1kg_pc_data/1kg_poplabel_map.txt', sep = '\t')
+        labeldata['color'] = labeldata['pop'].map(eur_pop_color_dict)
+        labeldata = labeldata.rename(columns = {'sample':'IID'})
+        indiv_superpop = dict(zip(labeldata['IID'],labeldata['color']))
+        fig, ax = plt.subplots(nrows = 1, ncols = 1, figsize = (5,5))
+        df = pd.read_csv('../cache/1kg_pc_data/okbay2022.pcs',sep = '\t')
+        df = df.merge(labeldata[['IID','color']], on = 'IID', how = 'inner')
+        eigenvals = pd.read_csv('../cache/1kg_pc_data/okbay2022.values',sep = '\t',header = None,dtype=float)
+        eigenvals = (eigenvals/np.sum(eigenvals))*100
+        ax.scatter(df['PC1'],df['PC2'], s=7, c = df['color'])
+        ax.set_xlabel('PC1 (' + str(round(eigenvals.loc[0][0],2)) + '%)' )
+        ax.set_ylabel('PC2 (' + str(round(eigenvals.loc[1][0],2)) + '%)')
+        plt.tight_layout()
+        plt.savefig('../figures/main_text/okbay.eur.PC1.v.PC2.pdf')
+        plt.clf()
+        #plot yengo
+        labeldata = pd.read_csv('../cache/1kg_pc_data/1kg_poplabel_map.txt', sep = '\t')
+        labeldata['color'] = labeldata['pop'].map(eur_pop_color_dict)
+        labeldata = labeldata.rename(columns = {'sample':'IID'})
+        indiv_superpop = dict(zip(labeldata['IID'],labeldata['color']))
+        gbr = labeldata[labeldata['pop']=='GBR']
+        fig, ax = plt.subplots(nrows = 1, ncols = 1, figsize = (5,5))
+        df = pd.read_csv('../cache/1kg_pc_data/yengo2022.pcs',sep = '\t')
+        df = df.merge(labeldata[['IID','color']], on = 'IID', how = 'inner')
+        gbr = df[df['IID'].isin(gbr['IID'].tolist())]
+        eigenvals = pd.read_csv('../cache/1kg_pc_data/yengo2022.values',sep = '\t',header = None,dtype=float)
+        eigenvals = (eigenvals/np.sum(eigenvals))*100
+        ax.scatter(df['PC1'],df['PC2'], s=7, c = df['color'])
+        ax.set_xlabel('PC1 (' + str(round(eigenvals.loc[0][0],2)) + '%)' )
+        ax.set_ylabel('PC2 (' + str(round(eigenvals.loc[1][0],2)) + '%)')
+        plt.tight_layout()
+        plt.savefig('../figures/main_text/yengo.eur.PC1.v.PC2.pdf')
+        plt.clf()
+
+        # plot akbari
+        ancient_pops_color_dict = {'AN':'#4e79a7','BA':'#f28e2b','EN':'#e15759','H':'#76b7b2','M':'#59a14f','S':'#edc948'}
+        labeldata = pd.read_csv('../cache/1kg_pc_data/le2022-sample-metadata.txt', sep = '\t')
+
+        labeldata['color'] = labeldata['Epoch'].map(ancient_pops_color_dict)
+        labeldata = labeldata.rename(columns = {'sample':'IID'})
+
+        indiv_superpop = dict(zip(labeldata['IID'],labeldata['color']))
+        fig, ax = plt.subplots(nrows = 1, ncols = 1, figsize = (5,5))
+        df = pd.read_csv('../cache/1kg_pc_data/le-aadr-pca.v2.pcs',sep = '\t')
+        df = df.merge(labeldata[['IID','color']], on = 'IID', how = 'inner')
+
+        eigenvals = pd.read_csv('../cache/1kg_pc_data/le-aadr-pca.v2.eigenvalues',sep = '\t',header = None,dtype=float)
+        eigenvals = (eigenvals/np.sum(eigenvals))*100
+        ax.scatter(df['PC1'],df['PC2'], s=7, color = df['color'])
+        ax.set_xlabel('PC1 (' + str(round(eigenvals.loc[0][0],2)) + '%)' )
+        ax.set_ylabel('PC2 (' + str(round(eigenvals.loc[2][0],2)) + '%)')
+        plt.tight_layout()
+        plt.savefig('../figures/main_text/akbari2024.overall_health.PC1.v.PC2.pdf')
+        plt.clf()
 
     def plot_alphapillars(self):
         label = '1kg.all'
@@ -390,14 +608,12 @@ class main_figures(object):
         alpha_se_df = alpha_se_df.loc[alpha_dfplot.index.tolist()]
 
         alpha_dfplot['ycoordinate'] = [i for i in range(alpha_dfplot.shape[0],0,-1)]
-        alpha_dfplot = alpha_dfplot[['1e-05','0.001','ycoordinate']]
-        nondirect_df = nondirect_df[['1e-05','0.001']]
-        sad_df = sad_df[['1e-05','0.001']]
-
-        fig, ax = plt.subplots(nrows = 1, ncols = 2, figsize = (5,10))
+        alpha_dfplot = alpha_dfplot[['1e-05','1e-08','ycoordinate']]
+        print(alpha_dfplot.mean())
+        fig, ax = plt.subplots(nrows = 1, ncols = 2, figsize = (9,5))
         for i,j in enumerate(alpha_dfplot.columns[:2]):                 
             ax[i].vlines(1, ymin = 0, ymax =17.5, color = 'black')
-            ax[i].errorbar(alpha_dfplot[j],alpha_dfplot['ycoordinate'], xerr = alpha_se_df[j]*10,color = '#CA6627', linestyle = '', capsize = 3)
+            ax[i].errorbar(alpha_dfplot[j],alpha_dfplot['ycoordinate'], xerr = alpha_se_df[j],color = '#CA6627', linestyle = '', capsize = 3)
             ax[i].scatter(alpha_dfplot[j],alpha_dfplot['ycoordinate'],color = '#CA6627', s = 45)
             ax[i].title.set_text('p < ' + str(j))
             ax[i].set_axisbelow(True)
@@ -407,24 +623,24 @@ class main_figures(object):
         ax[0].set_yticks(alpha_dfplot['ycoordinate'])
         ax[0].set_yticklabels([self.label_dict[trait] for trait in alpha_dfplot.index.tolist()])
         
-        ax[0].set_yticks([x+1 for x in range(alpha_dfplot.shape[0])])
-        ax[0].set_yticklabels(['' for x in range(alpha_dfplot.shape[0])])
-        ax[0].set_xticks([x for x in range(1,6)])
-        ax[0].set_xticklabels([str(x) for x in ['1','2','3','4','5']])
-        ax[1].set_xticks([x for x in range(1,6)])
-        ax[1].set_xticklabels([str(x) for x in ['1','2','3','4','5']])
+        ax[1].set_yticks([x+1 for x in range(alpha_dfplot.shape[0])])
+        ax[1].set_yticklabels(['' for x in range(alpha_dfplot.shape[0])])
+        ax[0].set_xticks([x for x in range(1,10)])
+        ax[0].set_xticklabels([str(x) for x in ['1','2','3','4','5','6','7','8','9']])
+        ax[1].set_xticks([x for x in range(1,10)])
+        ax[1].set_xticklabels([str(x) for x in ['1','2','3','4','5','6','7','8','9']])
 
         ax[0].title.set_text(r'Marginal GWAS $p$-value < ' + r'$10^{-5}$')
-        ax[1].title.set_text(r'Marginal GWAS $p$-value < ' + r'$10^{-3}$')
+        ax[1].title.set_text(r'Marginal GWAS $p$-value < ' + r'$10^{-8}$')
 
         ax[0].set_ylim([0.5,17.5])
         ax[1].set_ylim([0.5,17.5])
-
+        ax[0].set_xlim([1,9.5])
+        ax[1].set_xlim([1,9.5])
         sns.despine()
         plt.tight_layout()
         plt.savefig('../figures/main_text/fig.wc.' + label + '.alpha.pillar.pdf')
         plt.clf()
-
 
     def plot_decomps_nondirect(self):
         pcs=6

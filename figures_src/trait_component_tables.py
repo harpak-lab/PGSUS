@@ -93,7 +93,7 @@ class trait_components(object):
 		sns.despine()
 		plt.tight_layout()
 		fig.subplots_adjust(top=0.9)
-		# plt.savefig('../figures/component_significance_tables/hist.' + label + '.' + analysis + '.pdf')
+		plt.savefig('../figures/component_significance_tables/hist.' + label + '.' + analysis + '.pdf')
 		plt.clf()
 
 	def plot_wc(self):

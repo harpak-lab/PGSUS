@@ -16,7 +16,7 @@ import matplotlib as mpl
 warnings.filterwarnings('ignore')
 
 #load classes from other scripts
-# from alphapillars import alphapillars
+from alphapillars import alphapillars
 from mainfigs import main_figures
 from method_scatters import method_scatters
 from decomps import decomps
@@ -26,7 +26,7 @@ from stratification_comparison import stratification_comparison
 from trait_component_tables import trait_components
 from trait_component_tables_nondirect import trait_components_nondirect
 from simulation_figures import simulation_plots
-# from threshold_ascertainment import thresholding_ascertainment_plots
+from threshold_ascertainment import thresholding_ascertainment
 from external_correlates import external_correlates
 
 parser = argparse.ArgumentParser()
@@ -85,6 +85,7 @@ sps_traits = ['alcohol_intake_freq','birth_weight','bmi','dbp','fvc','hair_color
 pval_array = [1e-8,1e-5,0.001,1.0]
 
 if 'main' in figset:
+	print('here')
 	x = main_figures(analyses, label_dict)
 	x.run()
 
@@ -122,7 +123,7 @@ if 'supp' in figset:
 		plots.run()
 
 	if 'thresholding_ascertainment' in figures:
-		plots = thresholding_ascertainment_plots(label_dict, sps_traits)
+		plots = thresholding_ascertainment(label_dict, sps_traits)
 		plots.run()
 
 	if 'external_correlates' in figures:

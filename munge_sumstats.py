@@ -116,6 +116,9 @@ class make_input_files(object):
 		print(f"{len(self.pop_gwas) - pop_gwas_total} variants removed as NA or duplicates from population GWAS.")
 		print(f"{len(self.sib_gwas) - sib_gwas_total} variants removed as NA or duplicates from sibling GWAS.")
 
+		self.sib_gwas = self.sib_gwas.dropna()
+		self.pop_gwas = self.pop_gwas.dropna()
+		
 		if snpset:
 			snpset = pd.read_csv(snpset, header = None)
 			snpset.columns = ['SNP']

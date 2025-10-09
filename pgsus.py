@@ -1,5 +1,6 @@
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
+# from pandas.errors import SettingWithCopyWarning
+# warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 import numpy as np
 import sys
@@ -258,7 +259,6 @@ if __name__ == '__main__':
 		float(threshold_list[0]), outpath, outlabel, CHR, POS, pc_lower_bound=100, eigenvecs = eigenvecs, eigenvalues = eigenvalues, \
 		boot_se = nboots, block_perm = block_perm, pcs_to_test = pcs_to_test, nperm = nperm)
 	log.log('Done.\n')
-
 	final = sad.outputs()
 	eigenvecs = final['eigenvecs']
 	eigenvalues = final['eigenvalues']
