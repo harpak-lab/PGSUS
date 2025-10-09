@@ -20,10 +20,6 @@ Once the environment is successfully created activate it using
 
 `source activate pgsus`
 
-The PGSUS software uses pysnptools to manipulate genetic data. It is most easily installed through pip using the command below while the environment is active. 
-
-`pip install pysnptools`
-
 
 ## Clumping to identify independent markers (optional)
 
@@ -59,7 +55,7 @@ python munge_sumstats.py --pop-gwas-file example/example.pop.stats.linear \
 --preselected-snps example/example.snp.ids.txt \
 --outdir example/ \
 --outlabel pgsus_height_example \
---snp-id ID 
+--snp-id SNP 
  ```
 
 The possible flags that can be used to munge different input file formats are enumerated below:
@@ -102,7 +98,7 @@ Once the script is run, there should be two files produced both with specified o
 With the preprocessed data in hand the PGSUS software can now be run. There are a number of possible flags intended to help incorporate different sources of data. An example command is given below and each possible flag is described as well. 
 
 ```python
-python pgsus.py --genetic-file 1kg.example.bed \
+python pgsus.py --genetic-file example/1kg.example.bed \
 --pop-gwas example/pgsus_height_example.standard.preproc.txt \
 --sib-gwas example/pgsus_height_example.sib.preproc.txt \
 --chrom-pos SNP \
@@ -116,7 +112,7 @@ python pgsus.py --genetic-file 1kg.example.bed \
 --outfile-label pgsus_height_example \
 --out example/  \
 --chrom CHR \
---pos BP \
+--pos POS \
 --permutation-test
 ```
 
@@ -147,7 +143,7 @@ Possible flags include:
 
 - `--nboots` the number of bootstraps to perform in estimating the standard errror of the isotropic inflation factor using the Deming regression framework.
 
-- `--eigenvals` file that contains the eigenvalues of the prediction sample genotype matrix saved as an ".npy" formatted file. If this flag is absent then a numpy implementation of PCA will be berformed on the plink binary file specified using `bfile`. 
+- `--eigenvals` file that contains the eigenvalues of the prediction sample genotype matrix saved as an ".npy" formatted file. If this flag is absent then a numpy implementation of PCA will be performed on the plink binary file specified using `bfile`. 
 
 - `--eigenvecs` file that contains the eigenvectors of the prediction sample genotype matrix saved as an ".npy" formatted file.
 

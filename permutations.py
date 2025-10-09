@@ -3,6 +3,7 @@ import numpy as np
 import sys
 import os
 import warnings
+#from pandas.core.common import SettingWithCopyWarning
 from pandas.errors import SettingWithCopyWarning
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -14,7 +15,7 @@ class block_permutation():
 		sib_se_threshed, ascp, thresh, outlabel, eigenvecs, eigenvalues, emp_direct_vc, emp_sad_vc, 
 		emp_covar_vc, emp_nondirect_vc, emp_standard_decomp, emp_sib_decomp, emp_diff_decomp, variance_direct_vc, 
 		variance_sad_vc, variance_covar_vc, variance_nondirect_vc, outdir, pos_label, pcs_to_test=15, nperm = 1000):
-		print('PERMUTING')
+		# print('PERMUTING')
 		self.block_bounds= block_bounds
 		self.chr_pos = chr_pos
 		self.chrom = chrom
@@ -223,8 +224,12 @@ class block_permutation():
 		tests_out = pd.DataFrame(outarray, index = indices, columns = ['PC' + str(i+1) for i in range(outarray.shape[1])])
 
 		if self.outlabel == '':
-			print(self.outdir + '/block.permutation.stats.pval.' + str(self.thresh) + '.txt')
+			outpath = self.outdir + '/block.permutation.stats.pval.' + str(self.thresh) + '.txt'
+			print(f"Writing permutation results to: {outpath}")
+			# print(self.outdir + '/block.permutation.stats.pval.' + str(self.thresh) + '.txt')
 			tests_out.to_csv(self.outdir + '/block.permutation.stats.pval.' + str(self.thresh) + '.txt', sep = '\t')
 		else:
-			print(self.outdir + '/' + self.outlabel + '.block.permutation.stats.pval.' + str(self.thresh) + '.txt')
+			outpath = self.outdir + '/' + self.outlabel + '.block.permutation.stats.pval.' + str(self.thresh) + '.txt'
+			print(f"Writing permutation results to: {outpath}")
+			# print(self.outdir + '/' + self.outlabel + '.block.permutation.stats.pval.' + str(self.thresh) + '.txt')
 			tests_out.to_csv(self.outdir + '/' + self.outlabel + '.block.permutation.stats.pval.' + str(self.thresh) + '.txt', sep = '\t')
