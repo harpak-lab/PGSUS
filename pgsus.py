@@ -3,10 +3,12 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 import numpy as np
 import sys
+import os
 import time, sys, traceback, argparse
 from pysnptools.snpreader import Bed
 from pysnptools.standardizer import Unit
 from estimation import *
+from datetime import datetime
 ################################################################################################
 #This script is used to perform SAD variance decomposition in polygenic risk scores.
 #The following inputs are necessary in order to perform SAD analysis:
@@ -33,7 +35,8 @@ from estimation import *
 
 
 __version__ = '1.0.0'
-MASTHEAD = "*********************************************************************\n"
+MASTHEAD = "\n*********************************************************************\n"
+MASTHEAD += "* PGSUS\n"
 MASTHEAD += "* SAD variance decomposition for polygenic scores\n"
 MASTHEAD += "* Version {V}\n".format(V=__version__)
 MASTHEAD += "* (C) 2024 Samuel Pattillo Smith, Doc Edge, and Arbel Harpak\n"
@@ -65,34 +68,36 @@ class Logger(object):
 
 #read in necessary arguments and filepaths, save as appropriate variables
 parser = argparse.ArgumentParser()
-parser.add_argument("--genetic-file", type=str, default = './', dest = 'genetic_file')
-parser.add_argument("--pop-gwas-file", type=str, default = './', dest = 'popgwas')
-parser.add_argument("--sib-gwas-file", type=str, default = './', dest = 'sibgwas')
-parser.add_argument("--pvalue", type=float, default = 1, dest = 'pval')
-parser.add_argument("--ascertainment-set", type=str, default = 'gwas', dest = 'ascertainment')
-parser.add_argument("--chrom", type=str, default = 'CHR', dest = 'CHR')
-parser.add_argument("--pos", type=str, default = 'POS', dest = 'POS')
-parser.add_argument("--chrom-pos", type=str, default = 'chrom.pos', dest = 'chr_pos')
-parser.add_argument("--pop-effect", type=str, default = 'BETA', dest = 'POPBETA')
-parser.add_argument("--pop-se", type=str, default = 'se', dest = 'POPSE')
-parser.add_argument("--sib-effect", type=str, default = 'BETA', dest = 'SIBBETA')
-parser.add_argument("--sib-se", type=str, default = 'se', dest = 'SIBSE')
-parser.add_argument("--pval-col", type=str, default = 'P', dest = 'P')
-parser.add_argument("--pop-pval-col", type=str, default = 'P', dest = 'POP_P')
+# FILE PATHS
+parser.add_argument("--genetic-file", type=str, default="/.", dest = 'genetic_file', help="PLINK .bed file with genotypes for prediction sample")
+parser.add_argument("--pop-gwas-file", type=str, default="/.", dest = 'popgwas', help="Population GWAS summary statistics file path")
+parser.add_argument("--sib-gwas-file", type=str, default="/.", dest = 'sibgwas', help="Sibling GWAS summary statistics file path")
+parser.add_argument("--pvalue", type=float, default = 1, dest = 'pval', help="Max p-value threshold for SNP inclusion. Default is p<1 (all SNPs included).")
+parser.add_argument('--threshold-list', type = str, dest='threshold_list', default=None, help="Instead of single p-value, a comma-separated list of p-value thresholds and perform one analysis for each threshold.")
+parser.add_argument("--out", type=str, default = './', dest = 'outpath', help="Output directory. Default location is current directory.")
+parser.add_argument("--outfile-label", type=str, default="", dest = 'outlabel', help="Output file stem")
+parser.add_argument('--anc-data', type=str, dest = 'anc_data', default = 'support_files/SNPalleles_1000Genomes_allsites.txt.gz', help="By default will use the 1000 Genomes file in support_files directory.")
+parser.add_argument('--block-bounds', type=str, dest = 'block_bounds', default = 'support_files/Pickrell_breakpoints_EUR.bed', help="By default will use the breakpoints file in support_files directory.")
 
-parser.add_argument('--nboots', type=int, dest = 'nboots', default = 100)
-parser.add_argument("--eigenvals", type=str, default = None, dest = 'eigenvalues')
-parser.add_argument("--eigenvecs", type=str, default = None, dest = 'eigenvecs')
+# COLUMN HEADER OPTIONS
+parser.add_argument("--ascertainment-set", type=str, default = 'gwas', dest = 'ascertainment', help="Which GWAS summary statistics to threshold on when determining which SNPs to include for PGS. Options are \'sibs\' or \'gwas\'.")
+parser.add_argument("--chrom", type=str, default = 'CHR', dest = 'CHR', help="Column header with chromosome labels")
+parser.add_argument("--pos", type=str, default = 'POS', dest = 'POS', help="Column header with position labels")
+parser.add_argument("--chrom-pos", type=str, default = 'chrom.pos', dest = 'chr_pos', help="Column header with SNP IDs in format \'CHR:POS\'")
+parser.add_argument("--pop-effect", type=str, default = 'BETA', dest = 'POPBETA', help="Effect column header for population GWAS. Default is \'BETA\'.")
+parser.add_argument("--pop-se", type=str, default = 'se', dest = 'POPSE', help="Standard error column header for population GWAS. Default is \'se\'.")
+parser.add_argument("--pop-pval-col", type=str, default = 'P', dest = 'POP_P', help="P-value column header for population GWAS. Default is \'P\'.")
+parser.add_argument("--sib-effect", type=str, default = 'BETA', dest = 'SIBBETA', help="Effect column header for sibling GWAS. Default is \'BETA\'.")
+parser.add_argument("--sib-se", type=str, default = 'se', dest = 'SIBSE', help="Standard error column header for sibling GWAS. Default is \'se\'.")
+parser.add_argument("--pval-col", type=str, default = 'P', dest = 'P', help="P-value column header for sibling GWAS. Default is \'P\'.")
 
-parser.add_argument('--permutation-test', default=False, action=argparse.BooleanOptionalAction, dest = 'block_perm')
-
-parser.add_argument('--perm-pcs', type=int, dest = 'pcs_to_test', default = 100)
-parser.add_argument('--nperm', type = int, dest = 'nperm', default = 1000)
-
-parser.add_argument("--outfile-label", type=str, default = '', dest = 'outlabel')
-parser.add_argument("--out", type=str, default = './', dest = 'outpath')
-parser.add_argument('--anc-data',type=str, dest = 'anc_data',default = 'support_files/SNPalleles_1000Genomes_allsites.txt.gz')
-parser.add_argument('--block-bounds',type=str, dest = 'block_bounds',default = 'support_files/Pickrell_breakpoints_EUR.bed')
+# DECOMPOSITION PARAMETERS
+parser.add_argument('--nboots', type=int, dest = 'nboots', default = 100, help="Number of bootstraps to perform in estimating the standard errror of the isotropic inflation factor using the Deming regression framework. Default is 100.")
+parser.add_argument("--eigenvals", type=str, default = None, dest = 'eigenvalues', help="File containing the eigenvalues of the prediction sample genotype matrix saved as an \".npy\" formatted file. If this flag is absent then a numpy implementation of PCA will be performed on the PLINK binary file provided as --genetic-file.")
+parser.add_argument("--eigenvecs", type=str, default = None, dest = 'eigenvecs', help="File containing the eigenvectors of the prediction sample genotype matrix saved as an \".npy\" formatted file. If this flag is absent then a numpy implementation of PCA will be performed on the PLINK binary file provided as --genetic-file.")
+parser.add_argument('--permutation-test', default=False, action=argparse.BooleanOptionalAction, dest = 'block_perm', help="Perform PC-wise permutation test. Otherwise, only the isotropic inflation factor will be estimated.")
+parser.add_argument('--perm-pcs', type=int, dest = 'pcs_to_test', default = 100, help="Number of top PCs to be tested for the PC-wise permutation procedure. Default is 100.")
+parser.add_argument('--nperm', type = int, dest = 'nperm', default = 1000, help="Number of permutations to perform for each PC-wise decomposition in constructing the permutation based null. Default is 1,000.")
 
 args = parser.parse_args()
 genetic_file = args.genetic_file
@@ -111,7 +116,9 @@ POP_P = args.POP_P
 P = args.P
 anc_data = args.anc_data
 block_bounds = args.block_bounds
-ascertainment = args.ascertainment
+ascertainment = args.ascertainment.lower()
+if (ascertainment not in ["sibs", "gwas"]):
+	raise ValueError("--ascertainment option must be either \'sibs\' or \'gwas\'")
 eigenvalues = args.eigenvalues
 eigenvecs = args.eigenvecs
 outpath = args.outpath
@@ -122,13 +129,49 @@ block_perm = args.block_perm
 pcs_to_test = args.pcs_to_test
 nperm = args.nperm
 nboots = args.nboots
+threshold_list = args.threshold_list
+if threshold_list != None: # If there's just a p-value and not a threshold_list, set list to be that p-value
+	threshold_list = args.threshold_list.split(',')
+else:
+	threshold_list = [pval]
 
-print(block_perm)
+# Check for presence of all files before beginning work
+file_list = [genetic_file, popgwas, sibgwas, anc_data, block_bounds, outpath] #, genetic_file]
+# Check that both or neither of eigenvalues are provided
+if ((eigenvalues != None) & (eigenvecs == None)) | ((eigenvalues == None) & (eigenvecs != None)):
+	raise ValueError("Both --eigenvals and --eigenvecs files must be provided to use pre-computed PCA. Please provide both file paths or provide neither and PCA will be performed.")
+# If the files are provided, add them to the list of files to check
+if (eigenvalues != None) & (eigenvecs != None):
+    file_list.append(eigenvalues)
+    file_list.append(eigenvecs)
+for f in file_list:
+	if os.path.exists(f) == False:
+		raise FileNotFoundError(f'{f} does not exist or could not be opened.')
+
+# print(block_perm)
 if __name__ == '__main__':
 
 	args = parser.parse_args()
-	if args.outpath is None:
-		raise ValueError('--outpath is required.')
+	if args.outlabel == "":
+		raise ValueError('--outfile-label is required.')
+
+	print(MASTHEAD)
+	print(f"SAD decomposition started at {datetime.now()}")
+
+	print(f"[args] Population GWAS file: {popgwas}")
+	print(f"[args] Sibling GWAS file: {sibgwas}")
+	print(f"[args] Genotype file: {genetic_file}")
+	# print(f"[args] Reference allele file: {args.anc_data}")
+	print(f"[args] Block bounds file: {block_bounds}")
+	if threshold_list != [pval]:
+		print(f"[args] Evaluating at p-value thresholds: {threshold_list}")
+	else:
+		print(f"[args] P-value threshold: {pval}")
+	print(f"[args] Ascertainment dataset: {ascertainment}")
+	print(f"[args] Output directory: {outpath}")
+	print(f"[args] Output file stem: {outlabel}")
+	print(f"[args] Number of permutations to perform: {nperm}")
+	# exit()
 
 	log = Logger(args.outpath+'/pval.' + str(pval) + '.log')
 
@@ -152,7 +195,7 @@ if __name__ == '__main__':
 
 	log.log('Reading support files...')
 	#load in the allele info
-	anc_data = pd.read_csv(anc_data,sep = '\t', compression = 'gzip')	
+	anc_data = pd.read_csv(anc_data,sep = '\t', compression='infer') # compression = 'gzip')	
 	anc_data['chrom.pos'] = anc_data['SNP'].astype(str)
 	log.log('Done.\n')
 	#read in genetic data
@@ -209,37 +252,69 @@ if __name__ == '__main__':
 		stat_to_geno_df = popgwas
 
 	log.log('Beginning SAD decomposition...')
+	threshold = threshold_list[0]
 	sad = estimate_components(block_bounds, pc_genotypes, popgwas[POPBETA].astype(float), popgwas[POPSE].astype(float), \
 		sibgwas[SIBBETA].astype(float), sibgwas[SIBSE].astype(float), block_snps, asc_ps.astype(float), \
-		pval, outpath, outlabel, CHR, POS, pc_lower_bound=100, eigenvecs= eigenvecs, eigenvalues = eigenvalues, \
+		float(threshold_list[0]), outpath, outlabel, CHR, POS, pc_lower_bound=100, eigenvecs = eigenvecs, eigenvalues = eigenvalues, \
 		boot_se = nboots, block_perm = block_perm, pcs_to_test = pcs_to_test, nperm = nperm)
 	log.log('Done.\n')
 
 	final = sad.outputs()
+	eigenvecs = final['eigenvecs']
+	eigenvalues = final['eigenvalues']
 	
 	log.log('Alpha estimate: ' + str(final['alpha']) + ' (' + str(final['alpha_se']) + ')\n')	
 	log.log('nSNPs passing ascertainment filter: ' + str(final['nsnp'])+'\n')	
 	
 	if outlabel != '':
-		newfile = open(outpath + '/' + outlabel + '.pval.' + str(pval) + '.alpha.txt','w')
-		alphasefile = open(outpath + '/' + outlabel + '.pval.' + str(pval) + '.alpha.se.txt','w')
-		nsnpfile = open(outpath + '/' + outlabel + '.pval.' + str(pval) + '.nsnp.txt','w')
-		final['var_totals'].to_csv(outpath + '/' + outlabel + '.pval.' + str(pval) + '.variance.totals.txt', sep = '\t')
-	else:
-		newfile = open(outpath + '/pval.' + str(pval) + '.alpha.txt','w')
-		nsnpfile = open(outpath + '/pval.' + str(pval) + '.nsnp.txt','w')	
-		final['var_totals'].to_csv(outpath + '/pval.' + str(pval) + '.variance.totals.txt', sep = '\t')
+		newfile = open(outpath + '/' + outlabel + '.pval.' + str(threshold) + '.alpha.txt','w')
+		alphasefile = open(outpath + '/' + outlabel + '.pval.' + str(threshold) + '.alpha.se.txt','w')
+		nsnpfile = open(outpath + '/' + outlabel + '.pval.' + str(threshold) + '.nsnp.txt','w')
+		statPath = (f"{outpath}/{outlabel}.pval.{str(threshold)}.stats.txt")
+		final['var_totals'].to_csv(outpath + '/' + outlabel + '.pval.' + str(threshold) + '.variance.totals.txt', sep = '\t')
+
+	else: ### SEEMS UNNECESSARY, SET DEFAULT OUTLABEL TO PGSUS AND REMOVE. CHECK PATH AS PART OF FILE FINDING ###
+		newfile = open(outpath + '/pval.' + str(threshold) + '.alpha.txt','w')
+		nsnpfile = open(outpath + '/pval.' + str(threshold) + '.nsnp.txt','w')	
+		statPath = (f"{outpath}/{outlabel}.pval.{str(threshold)}.stats.txt")
+		final['var_totals'].to_csv(outpath + '/pval.' + str(threshold) + '.variance.totals.txt', sep = '\t')
 	
 	newfile.write(str(final['alpha']))
 	alphasefile.write(str(final['alpha_se']))
 	nsnpfile.write(str(final['nsnp']))
+	pd.DataFrame({'out_label':[outlabel], 'n_snp':[final['nsnp']], 'alpha':[final['alpha']], 'alpha_se':[final['alpha_se']], 'p_value':[threshold]}).to_csv(statPath, header=True, index=False, sep="\t")
+	# pd.DataFrame({'name':['alpha', 'alpha_se', 'n_snp'], 'value':[final['alpha'], final['alpha_se'], final['nsnp']]}).to_csv(statPath, header=False, index=False, sep="\t")
+	
+	if len(threshold_list) > 1:
+		for threshold in threshold_list[1:]:
+			sad = estimate_components(block_bounds, pc_genotypes, popgwas[POPBETA].astype(float), popgwas[POPSE].astype(float), \
+				sibgwas[SIBBETA].astype(float), sibgwas[SIBSE].astype(float), block_snps, asc_ps.astype(float), \
+				float(threshold), outpath, outlabel, CHR, POS, pc_lower_bound=100, eigenvecs = eigenvecs, eigenvalues = eigenvalues, \
+				boot_se = nboots, block_perm = block_perm, pcs_to_test = pcs_to_test, nperm = nperm)
+			log.log('Done.\n')
+			final = sad.outputs()
+
+			log.log('Alpha estimate: ' + str(final['alpha']) + ' (' + str(final['alpha_se']) + ')\n')	
+			log.log('nSNPs passing ascertainment filter: ' + str(final['nsnp'])+'\n')	
+			
+			if outlabel != '':
+				newfile = open(outpath + '/' + outlabel + '.pval.' + str(threshold) + '.alpha.txt','w')
+				alphasefile = open(outpath + '/' + outlabel + '.pval.' + str(threshold) + '.alpha.se.txt','w')
+				nsnpfile = open(outpath + '/' + outlabel + '.pval.' + str(threshold) + '.nsnp.txt','w')
+				statPath = (f"{outpath}/{outlabel}.pval.{str(threshold)}.stats.txt")
+				final['var_totals'].to_csv(outpath + '/' + outlabel + '.pval.' + str(threshold) + '.variance.totals.txt', sep = '\t')
+
+			else: ### SEEMS UNNECESSARY, SET DEFAULT OUTLABEL TO PGSUS AND REMOVE. CHECK PATH AS PART OF FILE FINDING ###
+				newfile = open(outpath + '/pval.' + str(threshold) + '.alpha.txt','w')
+				nsnpfile = open(outpath + '/pval.' + str(threshold) + '.nsnp.txt','w')	
+				statPath = (f"{outpath}/{outlabel}.pval.{str(threshold)}.stats.txt")
+				final['var_totals'].to_csv(outpath + '/pval.' + str(threshold) + '.variance.totals.txt', sep = '\t')
+			
+			newfile.write(str(final['alpha']))
+			alphasefile.write(str(final['alpha_se']))
+			nsnpfile.write(str(final['nsnp']))
+			pd.DataFrame({'out_label':[outlabel], 'n_snp':[final['nsnp']], 'alpha':[final['alpha']], 'alpha_se':[final['alpha_se']], 'p_value':[threshold]}).to_csv(statPath, header=True, index=False, sep="\t")
+	
+	
 	log.log('SAD decomposition complete.\n')	
-
-
-
-
-
-
-
-
-
+	print(f"SAD decomposition finished at {datetime.now()}")
