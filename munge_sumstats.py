@@ -140,6 +140,7 @@ class make_input_files(object):
 
 		#check effects for to make sure that the alternative allele matches between the summary statistics and the target cohort
 		self.pop_gwas = self.pop_gwas.merge(relevant_anc, on = 'SNP', how = 'inner')
+		self.sib_gwas = self.sib_gwas.merge(relevant_anc, on = 'SNP', how = 'inner')
 		# print(f"LINE 111 pop x relevant_anc: {self.pop_gwas.shape}")
 		matcher = self.sib_gwas[['SNP']].merge(self.pop_gwas[['SNP']], on = 'SNP', how = 'inner')
 		# print(f"LINE 113 sib x pop x relevant_anc: {matcher.shape}")
@@ -159,7 +160,9 @@ class make_input_files(object):
 		self.pop_gwas['effect_matches'] = 2*(self.pop_gwas['effect_matches']) - 1
 		self.pop_gwas['effect_matches'] = self.pop_gwas['effect_matches'].astype(float)
 		self.pop_gwas['beta.altconsensus'] = self.pop_gwas[self.standard_beta].astype(float) * self.pop_gwas['effect_matches']
-		self.sib_gwas['effect_matches'] = self.pop_gwas['effect_matches']
+		self.sib_gwas['effect_matches'] = (self.sib_gwas[self.alt_allele]==self.sib_gwas['alt.allele']).astype(int)
+		self.sib_gwas['effect_matches'] = 2*(self.sib_gwas['effect_matches']) - 1
+		self.sib_gwas['effect_matches'] = self.sib_gwas['effect_matches']
 		self.sib_gwas['beta.altconsensus'] = self.sib_gwas[self.sib_beta].astype(float) * self.sib_gwas['effect_matches']
 
 	def check_shared_snps(self, preselected_snp_ids):
