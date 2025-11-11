@@ -1,7 +1,8 @@
 import numpy as np
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=RuntimeWarning)
+# from pandas.errors import SettingWithCopyWarning
+# warnings.simplefilter(action='ignore', category=FutureWarning)
+# warnings.simplefilter(action='ignore', category=RuntimeWarning)
 import pandas as pd
 import sys
 import statsmodels.formula.api as smf
@@ -10,7 +11,6 @@ from permutations import block_permutation
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
-from pylr2 import regress2
 from scipy.odr import *
 from sys import exit
 
@@ -18,7 +18,7 @@ class estimate_components(object):
 
     def __init__(self, block_bounds, pc_genotypes, gwas_beta, gwas_se, sib_beta, sib_se, chr_pos, asc_p, thresh, outpath, outlabel,  chrom, pos_label, 
         pc_lower_bound=100, eigenvecs= None, eigenvalues = None, boot_se = 100, block_perm = True, pcs_to_test = 15, nperm = 1000):
-        
+
         self.gwas_beta = gwas_beta.reset_index(drop = True)
         self.gwas_se = gwas_se.reset_index(drop = True)
         self.sib_beta = sib_beta.reset_index(drop = True)
@@ -78,6 +78,7 @@ class estimate_components(object):
         return temp
         
     def error_decomp(self,ses,eigenvalues,eigenvecs):
+        #Olivia's issue is occurring here
         ses = np.power(np.array(ses).reshape(self.eigenvecs.shape[0]),2)
         temp = np.apply_along_axis(self.element_multiplier, 0, np.power(eigenvecs,2), ses)
         temp = np.sum(temp, axis = 0)
@@ -125,10 +126,8 @@ class estimate_components(object):
             estimates.append(np.sqrt(np.abs(myoutput.beta[0])))
         return np.std(estimates)
 
-
     def estimate_components_and_alpha(self,gwas_beta,gwas_se,sib_beta,sib_se,ascertainment_p,thresh,eigenvecs,eigenvalues, plotter, tau,
         pc_upper_bound, pc_lower_bound = 100):
-        
         #get all necessary statistics from the population gwas
         #get gwas effects that have p values less than threshold
         gwas_beta_threshed = self.beta_p_thresh(gwas_beta, ascertainment_p, thresh)
