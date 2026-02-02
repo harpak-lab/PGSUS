@@ -27,7 +27,8 @@ This step is only necessary for identify independent markers if they have not be
 
 We recommend doing this using the greedy algorithm implemented by [plink1.9](https://www.cog-genomics.org/plink/1.9/postproc#clump). In our analyses we used the following command and parameter set, details for each flag can be found on the plink1.9 website. 
 
-```plink1.9 --bfile reference_population
+```
+plink1.9 --bfile reference_population
 --clump gwas.results.linear
 --clump-p1 1
 --clump-p2 1
