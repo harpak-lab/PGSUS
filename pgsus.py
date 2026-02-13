@@ -35,15 +35,15 @@ from datetime import datetime
 ################################################################################################
 
 
-__version__ = '1.0.0'
-MASTHEAD = "\n*********************************************************************\n"
+__version__ = '1.0.1'
+MASTHEAD = "\n*********************************************************************************\n"
 MASTHEAD += "* PGSUS\n"
 MASTHEAD += "* SAD variance decomposition for polygenic scores\n"
 MASTHEAD += "* Version {V}\n".format(V=__version__)
-MASTHEAD += "* (C) 2024 Samuel Pattillo Smith, Doc Edge, and Arbel Harpak\n"
+MASTHEAD += "* (C) 2026 Samuel Pattillo Smith, Olivia Smith, Doc Edge, and Arbel Harpak\n"
 MASTHEAD += "* University of Texas and University of Southern California\n"
 MASTHEAD += "* GNU General Public License v3\n"
-MASTHEAD += "*********************************************************************\n"
+MASTHEAD += "*********************************************************************************\n"
 
 def sec_to_str(t):
     '''Convert seconds to days:hours:minutes:seconds'''
@@ -97,10 +97,13 @@ parser.add_argument('--nboots', type=int, dest = 'nboots', default = 100, help="
 parser.add_argument("--eigenvals", type=str, default = None, dest = 'eigenvalues', help="File containing the eigenvalues of the prediction sample genotype matrix saved as an \".npy\" formatted file. If this flag is absent then a numpy implementation of PCA will be performed on the PLINK binary file provided as --genetic-file.")
 parser.add_argument("--eigenvecs", type=str, default = None, dest = 'eigenvecs', help="File containing the eigenvectors of the prediction sample genotype matrix saved as an \".npy\" formatted file. If this flag is absent then a numpy implementation of PCA will be performed on the PLINK binary file provided as --genetic-file.")
 parser.add_argument('--permutation-test', default=False, action=argparse.BooleanOptionalAction, dest = 'block_perm', help="Perform PC-wise permutation test. Otherwise, only the isotropic inflation factor will be estimated.")
-parser.add_argument('--perm-pcs', type=int, dest = 'pcs_to_test', default = 100, help="Number of top PCs to be tested for the PC-wise permutation procedure. Default is 100.")
+parser.add_argument('--perm-pcs', type=int, dest = 'pcs_to_test', default = 15, help="Number of top PCs to be tested for the PC-wise permutation procedure. Default is 15.")
 parser.add_argument('--nperm', type = int, dest = 'nperm', default = 1000, help="Number of permutations to perform for each PC-wise decomposition in constructing the permutation based null. Default is 1,000.")
-
+parser.add_argument('--aperm', default = False, action=argparse.BooleanOptionalAction, dest = 'aperm', help="Perform an additional permutation procedure where the signs of the effect sizes in each block are flipped. This is a less computationally intensive than the block permutation procedure where the number of permutations is absolute. Default is False.")
+parser.add_argument('--aperm-alpha', type = float, dest = 'aperm_alpha', default = 0.05, help="Sign-flipping permutation procedure will be performed if --aperm is set to True. This flag sets the alpha threshold for significance in this procedure. Default is 0.05.")
+parser.add_argument('--c', type = float, dest = 'c', default = 0.1, help="The constant c used in the block permutation procedure to determine sensitivity threshold of adaptive permutaiton procedure. Default is 0.1.")
 args = parser.parse_args()
+
 genetic_file = args.genetic_file
 popgwas = args.popgwas
 sibgwas = args.sibgwas
@@ -136,6 +139,10 @@ if threshold_list != None: # If there's just a p-value and not a threshold_list,
 else:
 	threshold_list = [pval]
 
+aperm = args.aperm
+aperm_alpha = args.aperm_alpha
+c = args.c
+
 # Check for presence of all files before beginning work
 file_list = [genetic_file, popgwas, sibgwas, anc_data, block_bounds, outpath] #, genetic_file]
 # Check that both or neither of eigenvalues are provided
@@ -149,7 +156,6 @@ for f in file_list:
 	if os.path.exists(f) == False:
 		raise FileNotFoundError(f'{f} does not exist or could not be opened.')
 
-# print(block_perm)
 if __name__ == '__main__':
 
 	args = parser.parse_args()
@@ -171,9 +177,7 @@ if __name__ == '__main__':
 	print(f"[args] Ascertainment dataset: {ascertainment}")
 	print(f"[args] Output directory: {outpath}")
 	print(f"[args] Output file stem: {outlabel}")
-	print(f"[args] Number of permutations to perform: {nperm}")
-	# exit()
-
+	
 	log = Logger(args.outpath+'/pval.' + str(pval) + '.log')
 
 	defaults = vars(parser.parse_args(''))
@@ -196,7 +200,7 @@ if __name__ == '__main__':
 
 	log.log('Reading support files...')
 	#load in the allele info
-	anc_data = pd.read_csv(anc_data,sep = '\t', compression='infer') # compression = 'gzip')	
+	anc_data = pd.read_csv(anc_data,sep = '\t', compression='infer')
 	anc_data['chrom.pos'] = anc_data['SNP'].astype(str)
 	log.log('Done.\n')
 	#read in genetic data
@@ -256,8 +260,9 @@ if __name__ == '__main__':
 	threshold = threshold_list[0]
 	sad = estimate_components(block_bounds, pc_genotypes, popgwas[POPBETA].astype(float), popgwas[POPSE].astype(float), \
 		sibgwas[SIBBETA].astype(float), sibgwas[SIBSE].astype(float), block_snps, asc_ps.astype(float), \
-		float(threshold_list[0]), outpath, outlabel, CHR, POS, pc_lower_bound=100, eigenvecs = eigenvecs, eigenvalues = eigenvalues, \
+		float(threshold_list[0]), outpath, outlabel, CHR, POS, aperm, aperm_alpha,c, pc_lower_bound=100, eigenvecs = eigenvecs, eigenvalues = eigenvalues, \
 		boot_se = nboots, block_perm = block_perm, pcs_to_test = pcs_to_test, nperm = nperm)
+	
 	log.log('Done.\n')
 	final = sad.outputs()
 	eigenvecs = final['eigenvecs']
@@ -283,7 +288,6 @@ if __name__ == '__main__':
 	alphasefile.write(str(final['alpha_se']))
 	nsnpfile.write(str(final['nsnp']))
 	pd.DataFrame({'out_label':[outlabel], 'n_snp':[final['nsnp']], 'alpha':[final['alpha']], 'alpha_se':[final['alpha_se']], 'p_value':[threshold]}).to_csv(statPath, header=True, index=False, sep="\t")
-	# pd.DataFrame({'name':['alpha', 'alpha_se', 'n_snp'], 'value':[final['alpha'], final['alpha_se'], final['nsnp']]}).to_csv(statPath, header=False, index=False, sep="\t")
 	
 	if len(threshold_list) > 1:
 		for threshold in threshold_list[1:]:
