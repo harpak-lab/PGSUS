@@ -260,7 +260,7 @@ if __name__ == '__main__':
 	threshold = threshold_list[0]
 	sad = estimate_components(block_bounds, pc_genotypes, popgwas[POPBETA].astype(float), popgwas[POPSE].astype(float), \
 		sibgwas[SIBBETA].astype(float), sibgwas[SIBSE].astype(float), block_snps, asc_ps.astype(float), \
-		float(threshold_list[0]), outpath, outlabel, CHR, POS, aperm, aperm_alpha,c, pc_lower_bound=100, eigenvecs = eigenvecs, eigenvalues = eigenvalues, \
+		float(threshold_list[0]), outpath, outlabel, CHR, POS, aperm, aperm_alpha, c, pc_lower_bound=100, eigenvecs = eigenvecs, eigenvalues = eigenvalues, \
 		boot_se = nboots, block_perm = block_perm, pcs_to_test = pcs_to_test, nperm = nperm)
 	
 	log.log('Done.\n')
@@ -293,7 +293,7 @@ if __name__ == '__main__':
 		for threshold in threshold_list[1:]:
 			sad = estimate_components(block_bounds, pc_genotypes, popgwas[POPBETA].astype(float), popgwas[POPSE].astype(float), \
 				sibgwas[SIBBETA].astype(float), sibgwas[SIBSE].astype(float), block_snps, asc_ps.astype(float), \
-				float(threshold), outpath, outlabel, CHR, POS, pc_lower_bound=100, eigenvecs = eigenvecs, eigenvalues = eigenvalues, \
+				float(threshold), outpath, outlabel, CHR, POS, aperm, aperm_alpha, c, pc_lower_bound=100, eigenvecs = eigenvecs, eigenvalues = eigenvalues, \
 				boot_se = nboots, block_perm = block_perm, pcs_to_test = pcs_to_test, nperm = nperm)
 			log.log('Done.\n')
 			final = sad.outputs()
@@ -318,7 +318,6 @@ if __name__ == '__main__':
 			alphasefile.write(str(final['alpha_se']))
 			nsnpfile.write(str(final['nsnp']))
 			pd.DataFrame({'out_label':[outlabel], 'n_snp':[final['nsnp']], 'alpha':[final['alpha']], 'alpha_se':[final['alpha_se']], 'p_value':[threshold]}).to_csv(statPath, header=True, index=False, sep="\t")
-	
 	
 	log.log('SAD decomposition complete.\n')	
 	print(f"SAD decomposition finished at {datetime.now()}")

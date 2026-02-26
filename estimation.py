@@ -45,14 +45,13 @@ class estimate_components(object):
 
         self.alpha = 1.
         self.pc_upper_bound = self.eigenvalues.shape[0]
-        print('[args] Performing variance component estimation...')
         self.direct_variance_component_init, self.sad_variance_component_init, self.covar_variance_component_init, self.decomp_gwas, self.decomp_sib, self.decomp_diff, self.gwas_avg_se2,self.sib_avg_se2, self.proj_gwas, self.proj_sib, self.proj_diff, self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, self.variance_nondirect_vc, self.standard_variance_component, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.beta_sum, self.alpha, self.alpha_se, self.vartotals_init, self.tau, self.nondirect_variance_component = self.estimate_components_and_alpha(self.gwas_beta, self.gwas_se,self.sib_beta,self.sib_se,self.ascertainment_p, self.thresh,self.eigenvecs, self.eigenvalues, 1, 1, self.pc_upper_bound, pc_lower_bound = self.pc_lower_bound)
         self.alpha_report = self.alpha
 
-        self.gwas_beta = gwas_beta.reset_index(drop = True)/self.alpha_report
-        self.gwas_se = gwas_se.reset_index(drop = True)/self.alpha_report
-        self.sib_beta = sib_beta.reset_index(drop = True)
-        self.sib_se = sib_se.reset_index(drop = True)
+        self.gwas_beta = gwas_beta.reset_index(drop = True)
+        self.gwas_se = gwas_se.reset_index(drop = True)
+        self.sib_beta = sib_beta.reset_index(drop = True)*self.alpha_report
+        self.sib_se = sib_se.reset_index(drop = True)*self.alpha_report
         self.pc_upper_bound = self.eigenvalues.shape[0]
         self.ascertainment_p = asc_p.reset_index(drop = True)
         self.thresh = thresh
@@ -61,11 +60,9 @@ class estimate_components(object):
         self.direct_variance_component, self.sad_variance_component, self.covar_variance_component, self.decomp_gwas, self.decomp_sib, self.decomp_diff, self.gwas_avg_se2,self.sib_avg_se2, self.proj_gwas, self.proj_sib, self.proj_diff, self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, self.variance_nondirect_vc, self.standard_variance_component, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.beta_sum, self.alpha, self.alpha_se_new, self.vartotals, self.tau, self.nondirect_variance_component = self.estimate_components_and_alpha(self.gwas_beta, self.gwas_se,self.sib_beta,self.sib_se, self.ascertainment_p, self.thresh,self.eigenvecs, self.eigenvalues, 0, self.tau, self.pc_upper_bound, pc_lower_bound = self.pc_lower_bound)
 
         if block_perm:
-            print('[args] Performing block permutations...')
             block_permutation(aperm, block_bounds, chr_pos, chrom, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.ascertainment_p, self.thresh, outlabel, self.eigenvecs, self.eigenvalues, self.direct_variance_component, self.sad_variance_component, self.covar_variance_component, self.nondirect_variance_component, self.decomp_gwas, self.decomp_sib, self.decomp_diff,self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc,self.variance_nondirect_vc, outpath, pos_label, self.pcs_to_test, nperm = nperm, aperm_alpha=aperm_alpha, c = c)
         else:
             pass
-        print('Done.')
 
     def element_multiplier(self,x,y):
         return np.multiply(x,y)
@@ -157,6 +154,7 @@ class estimate_components(object):
         decomp_gwas_se = self.error_decomp(gwas_se_threshed, eigenvalues, eigenvecs)
         decomp_sib_se = self.error_decomp(sib_se_threshed, eigenvalues, eigenvecs)
         direct_variance_component = decomp_sib - decomp_sib_se
+
         sad_variance_component = decomp_diff - decomp_sib_se - decomp_gwas_se
         covar_variance_component = decomp_gwas - decomp_diff - decomp_sib + 2*decomp_sib_se
         standard_variance_component = decomp_gwas - decomp_gwas_se
@@ -175,15 +173,33 @@ class estimate_components(object):
 
         startdf = np.vstack((standard_variance_component,direct_variance_component,variance_standard_vc,variance_sib_vc))
         lmdf = pd.DataFrame(data=startdf, index = ['standard_vc','sib_vc','var_standard_vc','var_sib_vc']).T
+        # print('initial stats')
+        # print(lmdf.mean(axis = 0))
+        # print(lmdf.sum(axis=0))
+        # print(direct_variance_component.sum(), standard_variance_component.sum())
+
         lmdf = lmdf.astype(float)
         lmdf = lmdf.iloc[pc_lower_bound:pc_upper_bound]
-        
         linear = Model(self.f)
         mydata = RealData(x=lmdf['sib_vc'],y=lmdf['standard_vc'],sx = lmdf['var_sib_vc'], sy = lmdf['var_standard_vc'])
+        # print(lmdf.mean(axis = 0))
+        # print(lmdf.sum(axis=0))
+        # print(direct_variance_component[pc_lower_bound:].sum(), standard_variance_component[pc_lower_bound:].sum())
         myodr = ODR(mydata, linear, beta0 = [0.])
         myoutput = myodr.run()
         alpha = np.sqrt(np.abs(myoutput.beta[0]))
         alpha_se = self.se_bootstrapper(lmdf)
+        # print(myoutput.beta[0], alpha, alpha_se)
+        # fig, ax = plt.subplots()
+        # ax.scatter(lmdf['sib_vc'], lmdf['standard_vc'])
+        # x = np.linspace(lmdf['sib_vc'].min(), lmdf['sib_vc'].max(), 100)
+        # ax.plot(x, myoutput.beta[0]*x, color = 'red')
+        # ax.set_xlabel('Sib variance component')
+        # ax.set_ylabel('Standard variance component')
+        # plt.savefig('./' + self.outlabel + '.odr.plot.png')
+        # plt.close()
+        # plt.clf()
+        # sys.exit()
 
         # ALL PCs
         var_props_all_pcs = np.array([np.sum(direct_variance_component)/np.sum(decomp_gwas),
@@ -193,7 +209,7 @@ class estimate_components(object):
             np.sum(decomp_gwas_se)/np.sum(decomp_gwas),
             np.sum(nondirect_variance_component)/np.sum(standard_variance_component),
             np.sum(direct_variance_component)/np.sum(nondirect_variance_component)])
-        # TOP PCs
+        # TOP X PCs
         var_props_top_pcs = np.array([np.sum(direct_variance_component[:self.pc_lower_bound])/np.sum(decomp_gwas[:self.pc_lower_bound]),
             np.sum(sad_variance_component[:self.pc_lower_bound])/np.sum(decomp_gwas[:self.pc_lower_bound]),
             np.sum(covar_variance_component[:self.pc_lower_bound])/np.sum(decomp_gwas[:self.pc_lower_bound]),
@@ -201,7 +217,7 @@ class estimate_components(object):
             np.sum(decomp_gwas_se[:self.pc_lower_bound])/np.sum(decomp_gwas[:self.pc_lower_bound]),
             np.sum(nondirect_variance_component[:self.pc_lower_bound])/np.sum(standard_variance_component[:self.pc_lower_bound]),
             np.sum(direct_variance_component[:self.pc_lower_bound])/np.sum(nondirect_variance_component[:self.pc_lower_bound])])
-        # BOTTOM PCs
+        # BOTTOM X+ PCs
         var_props_bottom_pcs = np.array([np.sum(direct_variance_component[self.pc_lower_bound:])/np.sum(decomp_gwas[self.pc_lower_bound:]),
             np.sum(sad_variance_component[self.pc_lower_bound:])/np.sum(decomp_gwas[self.pc_lower_bound:]),
             np.sum(covar_variance_component[self.pc_lower_bound:])/np.sum(decomp_gwas[self.pc_lower_bound:]),
@@ -210,7 +226,7 @@ class estimate_components(object):
             np.sum(nondirect_variance_component[self.pc_lower_bound:])/np.sum(standard_variance_component[self.pc_lower_bound:]),
             np.sum(direct_variance_component[self.pc_lower_bound:])/np.sum(nondirect_variance_component[self.pc_lower_bound:])])
         # TOP 6
-        var_props_top6_pcs = np.array([np.sum(direct_variance_component[:6]),
+        var_props_top6_pcs = np.array([np.sum(direct_variance_component[:6])/np.sum(decomp_gwas[:6]),
             np.sum(sad_variance_component[:6])/np.sum(decomp_gwas[:6]),
             np.sum(covar_variance_component[:6])/np.sum(decomp_gwas[:6]),
             np.sum(nondirect_variance_component[:6])/np.sum(decomp_gwas[:6]),

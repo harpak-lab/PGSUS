@@ -7,7 +7,7 @@ import warnings
 # from pandas.errors import SettingWithCopyWarning
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
-
+np.random.seed(8675309)
 class block_permutation():
 
 	def __init__(self, aperm, block_bounds, chr_pos, chrom, standard_beta_threshed, standard_se_threshed, sib_beta_threshed, 
@@ -36,7 +36,7 @@ class block_permutation():
 		self.block_bound_process()
 
 		#get the empirical decompositions onto the PCs by block
-		self.block_dots(self.standard_beta_threshed, self.standard_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, thresh, eigenvecs, self.chr_pos)
+		self.block_dots(self.standard_beta_threshed, self.standard_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, thresh, eigenvalues, eigenvecs, self.chr_pos)
 		
 		if not aperm:
 			self.permute_blocks_mperm(eigenvalues)
@@ -69,24 +69,24 @@ class block_permutation():
 
 	## Take in the same thing as the est.components, but return a list of three matrices corresponding
 	## to relevant dot products per block.
-	def block_dots(self, standard_beta, standard_se, sib_beta, sib_se, thresh, eigenvecs, pickrell_blocks):
+	def block_dots(self, standard_beta, standard_se, sib_beta, sib_se, thresh, eigenvalues, eigenvecs, pickrell_blocks):
 		blocks = self.chr_pos['block'].unique()
-		standard_dots = pd.DataFrame(np.zeros((len(blocks),self.pcs_to_test)), index = blocks)
-		sib_dots = pd.DataFrame(np.zeros((len(blocks),self.pcs_to_test)), index = blocks)
-		diff_dots = pd.DataFrame(np.zeros((len(blocks),self.pcs_to_test)), index = blocks)
-		sum_dots = pd.DataFrame(np.zeros((len(blocks),self.pcs_to_test)), index = blocks)
-		gw_err_dots = pd.DataFrame(np.zeros((len(blocks),self.pcs_to_test)), index = blocks)
-		sib_err_dots = pd.DataFrame(np.zeros((len(blocks),self.pcs_to_test)), index = blocks)
-
+		standard_dots = pd.DataFrame(np.zeros((len(blocks),len(eigenvalues))), index = blocks)
+		sib_dots = pd.DataFrame(np.zeros((len(blocks),len(eigenvalues))), index = blocks)
+		diff_dots = pd.DataFrame(np.zeros((len(blocks),len(eigenvalues))), index = blocks)
+		sum_dots = pd.DataFrame(np.zeros((len(blocks),len(eigenvalues))), index = blocks)
+		gw_err_dots = pd.DataFrame(np.zeros((len(blocks),len(eigenvalues))), index = blocks)
+		sib_err_dots = pd.DataFrame(np.zeros((len(blocks),len(eigenvalues))), index = blocks)
+		
 		for block in blocks:
 			block_indices = self.chr_pos[self.chr_pos['block'] == block].index.tolist()
-			standard_dots.loc[block] = self.summations(standard_beta.loc[block_indices],eigenvecs[block_indices,:self.pcs_to_test])
-			sib_dots.loc[block] = self.summations(sib_beta.loc[block_indices],eigenvecs[block_indices,:self.pcs_to_test])
-			diff_dots.loc[block] = self.summations(standard_beta.loc[block_indices]-sib_beta.loc[block_indices],eigenvecs[block_indices,:self.pcs_to_test])
-			sum_dots.loc[block] = self.summations(standard_beta.loc[block_indices]+sib_beta.loc[block_indices],eigenvecs[block_indices,:self.pcs_to_test])
-			#error decomposisions
-			gw_err_dots.loc[block] = self.summations(standard_se.loc[block_indices]**2,eigenvecs[block_indices,:self.pcs_to_test]**2)
-			sib_err_dots.loc[block] = self.summations(sib_se.loc[block_indices]**2,eigenvecs[block_indices,:self.pcs_to_test]**2)
+			standard_dots.loc[block] = self.summations(standard_beta.loc[block_indices],eigenvecs[block_indices,:])
+			sib_dots.loc[block] = self.summations(sib_beta.loc[block_indices],eigenvecs[block_indices,:])
+			diff_dots.loc[block] = self.summations(standard_beta.loc[block_indices]-sib_beta.loc[block_indices],eigenvecs[block_indices,:])
+			sum_dots.loc[block] = self.summations(standard_beta.loc[block_indices]+sib_beta.loc[block_indices],eigenvecs[block_indices,:])
+			#error decompositions
+			gw_err_dots.loc[block] = self.summations(standard_se.loc[block_indices]**2,eigenvecs[block_indices,:]**2)
+			sib_err_dots.loc[block] = self.summations(sib_se.loc[block_indices]**2,eigenvecs[block_indices,:]**2)
 
 		self.standard_dots, self.sib_dots, self.diff_dots, self.sum_dots, self.gw_err_dots, self.sib_err_dots = standard_dots, sib_dots, diff_dots, sum_dots, gw_err_dots, sib_err_dots
 
@@ -168,19 +168,19 @@ class block_permutation():
 		sad_vc_perm = pd.DataFrame(np.zeros((int(R),self.pcs_to_test)))
 		covar_vc_perm = pd.DataFrame(np.zeros((int(R),self.pcs_to_test)))
 		nondirect_vc_perm = pd.DataFrame(np.zeros((int(R),self.pcs_to_test)))
-		standard_decomp_perm = pd.DataFrame(np.zeros((int(R),self.pcs_to_test)))
-		sib_decomp_perm = pd.DataFrame(np.zeros((int(R),self.pcs_to_test)))
+		standard_decomp_perm = pd.DataFrame(np.zeros((int(R),len(eigenvalues))))
+		sib_decomp_perm = pd.DataFrame(np.zeros((int(R),len(eigenvalues))))
 		#it's impossible to get the number of successes needed to exit the permutation procedure unless you have r possible obstervaions
 		random_signs = np.array([2 * np.random.binomial(1,0.5,size = len(self.chr_pos['block'].unique().tolist())) - 1 for i in range(int(b))])
 		for perm in range(R):
-			mat_standard_perm = np.apply_along_axis(self.element_multiplier, 0, self.standard_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-			mat_sib_perm = np.apply_along_axis(self.element_multiplier, 0, self.sib_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-			mat_diff_perm = np.apply_along_axis(self.element_multiplier, 0, self.diff_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-			vcs_perm = self.var_comps_from_block_matrices_mperm(mat_standard_perm, mat_sib_perm, mat_diff_perm, self.gw_err_dots[[i for i in range(self.pcs_to_test)]], self.sib_err_dots[[i for i in range(self.pcs_to_test)]], eigenvalues[self.pcs_to_test])
-			direct_vc_perm.loc[perm] = vcs_perm[0]
-			sad_vc_perm.loc[perm] = vcs_perm[1]
-			covar_vc_perm.loc[perm] = vcs_perm[2]
-			nondirect_vc_perm.loc[perm] = vcs_perm[11]
+			mat_standard_perm = np.apply_along_axis(self.element_multiplier, 0, self.standard_dots, random_signs[perm,:])
+			mat_sib_perm = np.apply_along_axis(self.element_multiplier, 0, self.sib_dots, random_signs[perm,:])
+			mat_diff_perm = np.apply_along_axis(self.element_multiplier, 0, self.diff_dots, random_signs[perm,:])
+			vcs_perm = self.var_comps_from_block_matrices_mperm(mat_standard_perm, mat_sib_perm, mat_diff_perm, self.gw_err_dots, self.sib_err_dots, eigenvalues)
+			direct_vc_perm.loc[perm] = vcs_perm[0][:self.pcs_to_test]
+			sad_vc_perm.loc[perm] = vcs_perm[1][:self.pcs_to_test]
+			covar_vc_perm.loc[perm] = vcs_perm[2][:self.pcs_to_test]
+			nondirect_vc_perm.loc[perm] = vcs_perm[11][:self.pcs_to_test]
 			standard_decomp_perm.loc[perm] = vcs_perm[3]
 			sib_decomp_perm.loc[perm] = vcs_perm[4]
 
@@ -212,11 +212,11 @@ class block_permutation():
 			direct_successes = np.where((self.emp_direct_vc[pc]/np.sum(self.emp_standard_decomp)) <= np.array(direct_vc_perm.loc[:R][pc]/standard_decomp_perm.loc[:R].sum(axis = 1)), 1, 0)
 			r = np.sum(direct_successes)
 			while r < R and perm < b:
-				mat_standard_perm = np.apply_along_axis(self.element_multiplier, 0, self.standard_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				mat_sib_perm = np.apply_along_axis(self.element_multiplier, 0, self.sib_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				mat_diff_perm = np.apply_along_axis(self.element_multiplier, 0, self.diff_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				vcs_perm = self.var_comps_from_block_matrices_mperm(mat_standard_perm, mat_sib_perm, mat_diff_perm, self.gw_err_dots[[i for i in range(self.pcs_to_test)]], self.sib_err_dots[[i for i in range(self.pcs_to_test)]], eigenvalues[self.pcs_to_test])
-				direct_vc_perm.loc[perm] = vcs_perm[0]
+				mat_standard_perm = np.apply_along_axis(self.element_multiplier, 0, self.standard_dots, random_signs[perm,:])
+				mat_sib_perm = np.apply_along_axis(self.element_multiplier, 0, self.sib_dots, random_signs[perm,:])
+				mat_diff_perm = np.apply_along_axis(self.element_multiplier, 0, self.diff_dots, random_signs[perm,:])
+				vcs_perm = self.var_comps_from_block_matrices_mperm(mat_standard_perm, mat_sib_perm, mat_diff_perm, self.gw_err_dots, self.sib_err_dots, eigenvalues)
+				direct_vc_perm.loc[perm] = vcs_perm[0][:self.pcs_to_test]
 				standard_decomp_perm.loc[perm] = vcs_perm[3]
 				direct_successes = np.where((self.emp_direct_vc[pc]/np.sum(self.emp_standard_decomp)) <= np.array(direct_vc_perm.loc[:perm][pc]/standard_decomp_perm.loc[:perm].sum(axis = 1)), 1, 0)
 				r = np.sum(direct_successes)
@@ -227,11 +227,11 @@ class block_permutation():
 			sad_successes = np.where((self.emp_sad_vc[pc]/np.sum(self.emp_standard_decomp)) <= np.array(sad_vc_perm.loc[:R][pc]/standard_decomp_perm.loc[:R].sum(axis = 1)), 1, 0)
 			r = np.sum(sad_successes)
 			while r < R and perm < b:
-				mat_standard_perm = np.apply_along_axis(self.element_multiplier, 0, self.standard_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				mat_sib_perm = np.apply_along_axis(self.element_multiplier, 0, self.sib_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				mat_diff_perm = np.apply_along_axis(self.element_multiplier, 0, self.diff_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				vcs_perm = self.var_comps_from_block_matrices_mperm(mat_standard_perm, mat_sib_perm, mat_diff_perm, self.gw_err_dots[[i for i in range(self.pcs_to_test)]], self.sib_err_dots[[i for i in range(self.pcs_to_test)]], eigenvalues[self.pcs_to_test])
-				sad_vc_perm.loc[perm] = vcs_perm[1]
+				mat_standard_perm = np.apply_along_axis(self.element_multiplier, 0, self.standard_dots, random_signs[perm,:])
+				mat_sib_perm = np.apply_along_axis(self.element_multiplier, 0, self.sib_dots, random_signs[perm,:])
+				mat_diff_perm = np.apply_along_axis(self.element_multiplier, 0, self.diff_dots, random_signs[perm,:])
+				vcs_perm = self.var_comps_from_block_matrices_mperm(mat_standard_perm, mat_sib_perm, mat_diff_perm, self.gw_err_dots, self.sib_err_dots, eigenvalues)
+				sad_vc_perm.loc[perm] = vcs_perm[1][:self.pcs_to_test]
 				standard_decomp_perm.loc[perm] = vcs_perm[3]
 				sad_successes = np.where((self.emp_sad_vc[pc]/np.sum(self.emp_standard_decomp)) <= np.array(sad_vc_perm.loc[:perm][pc]/standard_decomp_perm.loc[:perm].sum(axis = 1)), 1, 0)
 				r = np.sum(sad_successes)
@@ -243,11 +243,11 @@ class block_permutation():
 			covar_successes_upper = np.where((self.emp_covar_vc[pc]/np.sum(self.emp_standard_decomp)) >= np.array(covar_vc_perm.loc[:R][pc]/standard_decomp_perm.loc[:R].sum(axis = 1)), 1, 0)
 			r_lower,r_upper = np.sum(covar_successes_lower), np.sum(covar_successes_upper)
 			while (r_lower < R or r_upper < R) and perm < b:
-				mat_standard_perm = np.apply_along_axis(self.element_multiplier, 0, self.standard_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				mat_sib_perm = np.apply_along_axis(self.element_multiplier, 0, self.sib_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				mat_diff_perm = np.apply_along_axis(self.element_multiplier, 0, self.diff_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				vcs_perm = self.var_comps_from_block_matrices_mperm(mat_standard_perm, mat_sib_perm, mat_diff_perm, self.gw_err_dots[[i for i in range(self.pcs_to_test)]], self.sib_err_dots[[i for i in range(self.pcs_to_test)]], eigenvalues[self.pcs_to_test])
-				covar_vc_perm.loc[perm] = vcs_perm[2]
+				mat_standard_perm = np.apply_along_axis(self.element_multiplier, 0, self.standard_dots, random_signs[perm,:])
+				mat_sib_perm = np.apply_along_axis(self.element_multiplier, 0, self.sib_dots, random_signs[perm,:])
+				mat_diff_perm = np.apply_along_axis(self.element_multiplier, 0, self.diff_dots, random_signs[perm,:])
+				vcs_perm = self.var_comps_from_block_matrices_mperm(mat_standard_perm, mat_sib_perm, mat_diff_perm, self.gw_err_dots, self.sib_err_dots, eigenvalues)
+				covar_vc_perm.loc[perm] = vcs_perm[2][:self.pcs_to_test]
 				standard_decomp_perm.loc[perm] = vcs_perm[3]
 				covar_successes_lower = np.where((self.emp_covar_vc[pc]/np.sum(self.emp_standard_decomp)) <= np.array(covar_vc_perm.loc[:perm][pc]/standard_decomp_perm.loc[:perm].sum(axis = 1)), 1, 0)
 				covar_successes_upper = np.where((self.emp_covar_vc[pc]/np.sum(self.emp_standard_decomp)) >= np.array(covar_vc_perm.loc[:perm][pc]/standard_decomp_perm.loc[:perm].sum(axis = 1)), 1, 0)
@@ -260,11 +260,11 @@ class block_permutation():
 			nondirect_successes_upper = np.where((self.emp_nondirect_vc[pc]/np.sum(self.emp_standard_decomp)) >= np.array(nondirect_vc_perm.loc[:R][pc]/standard_decomp_perm.loc[:R].sum(axis = 1)), 1, 0)
 			r_lower,r_upper = np.sum(nondirect_successes_lower), np.sum(nondirect_successes_upper)
 			while (r_lower < R or r_upper < R) and perm < b:
-				mat_standard_perm = np.apply_along_axis(self.element_multiplier, 0, self.standard_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				mat_sib_perm = np.apply_along_axis(self.element_multiplier, 0, self.sib_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				mat_diff_perm = np.apply_along_axis(self.element_multiplier, 0, self.diff_dots[[i for i in range(self.pcs_to_test)]], random_signs[perm,:])
-				vcs_perm = self.var_comps_from_block_matrices_mperm(mat_standard_perm, mat_sib_perm, mat_diff_perm, self.gw_err_dots[[i for i in range(self.pcs_to_test)]], self.sib_err_dots[[i for i in range(self.pcs_to_test)]], eigenvalues[self.pcs_to_test])
-				nondirect_vc_perm.loc[perm] = vcs_perm[11]
+				mat_standard_perm = np.apply_along_axis(self.element_multiplier, 0, self.standard_dots, random_signs[perm,:])
+				mat_sib_perm = np.apply_along_axis(self.element_multiplier, 0, self.sib_dots, random_signs[perm,:])
+				mat_diff_perm = np.apply_along_axis(self.element_multiplier, 0, self.diff_dots, random_signs[perm,:])
+				vcs_perm = self.var_comps_from_block_matrices_mperm(mat_standard_perm, mat_sib_perm, mat_diff_perm, self.gw_err_dots, self.sib_err_dots, eigenvalues)
+				nondirect_vc_perm.loc[perm] = vcs_perm[11][:self.pcs_to_test]
 				standard_decomp_perm.loc[perm] = vcs_perm[3]
 				nondirect_successes_lower = np.where((self.emp_nondirect_vc[pc]/np.sum(self.emp_standard_decomp)) <= np.array(nondirect_vc_perm.loc[:perm][pc]/standard_decomp_perm.loc[:perm].sum(axis = 1)), 1, 0)
 				nondirect_successes_upper = np.where((self.emp_nondirect_vc[pc]/np.sum(self.emp_standard_decomp)) >= np.array(nondirect_vc_perm.loc[:perm][pc]/standard_decomp_perm.loc[:perm].sum(axis = 1)), 1, 0)
@@ -276,15 +276,8 @@ class block_permutation():
 			ranked_direct = (direct_vc_perm.loc[:nperm_direct[k]][k]/standard_decomp_perm.loc[:nperm_direct[k]].sum(axis = 1)).sort_values().reset_index(drop=True)
 			upper95_perm_direct[k] = ranked_direct.loc[int(nperm_direct[k]*0.95)]
 			lower0_perm_direct[k] = ranked_direct.loc[0]
-			print(nperm_direct[k])
-			print(self.emp_direct_vc[k]/np.sum(self.emp_standard_decomp[:self.pcs_to_test]))
-			print(ranked_direct)
-			print(ranked_direct.shape)
-			print(np.where((self.emp_direct_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_direct), 1, 0))
-			print(np.where((self.emp_direct_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_direct), 1, 0).shape)
 			pvals_direct[k] = np.mean(np.where((self.emp_direct_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_direct), 1, 0))
-			print(pvals_direct[k])
-			sys.exit()
+
 			ranked_sad = (sad_vc_perm.loc[:nperm_sad[k]][k]/standard_decomp_perm.loc[:nperm_sad[k]].sum(axis = 1)).sort_values().reset_index(drop=True)
 			upper95_perm_sad[k] = ranked_sad.loc[int(nperm_sad[k]*0.95)]
 			lower0_perm_sad[k] = ranked_sad.loc[0]
@@ -374,12 +367,10 @@ class block_permutation():
 		if self.outlabel == '':
 			outpath = self.outdir + '/block.permutation.stats.pval.' + str(self.thresh) + '.txt'
 			print(f"Writing permutation results to: {outpath}")
-			# print(self.outdir + '/block.permutation.stats.pval.' + str(self.thresh) + '.txt')
 			tests_out.to_csv(self.outdir + '/block.permutation.stats.pval.' + str(self.thresh) + '.txt', sep = '\t')
 		else:
 			outpath = self.outdir + '/' + self.outlabel + '.block.permutation.stats.pval.' + str(self.thresh) + '.txt'
 			print(f"Writing permutation results to: {outpath}")
-			# print(self.outdir + '/' + self.outlabel + '.block.permutation.stats.pval.' + str(self.thresh) + '.txt')
 			tests_out.to_csv(self.outdir + '/' + self.outlabel + '.block.permutation.stats.pval.' + str(self.thresh) + '.txt', sep = '\t')
 
 	def output_table_aperm(self):
