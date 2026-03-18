@@ -262,7 +262,7 @@ class estimate_components(object):
             'proj_gwas':self.proj_gwas, 'proj_sib':self.proj_sib, 'proj_diff':self.proj_diff,
             'var_direct_vc':self.variance_direct_vc, 'var_sad_vc':self.variance_sad_vc, 'var_covar_vc':self.variance_covar_vc,
             'beta_sum':self.beta_sum, 'alpha':self.alpha_report,'alpha_se':self.alpha_se_new, 'nsnp':self.nsnp, 
-            'var_totals':self.vartotals_init, 'eigenvecs':self.eigenvecs,'eigenvalues':self.eigenvalues}
+            'var_totals':self.vartotals, 'eigenvecs':self.eigenvecs,'eigenvalues':self.eigenvalues}
 
 
         
