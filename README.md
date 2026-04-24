@@ -148,12 +148,20 @@ Possible flags include:
 
 - `--eigenvecs` file that contains the eigenvectors of the prediction sample genotype matrix saved as an ".npy" formatted file.
 
-- `--permutation-test` the presence of this flag indicates that the PC-wise permutation test should be performed. If absent, only the isotropic inflation factor will be estimated. 
+- `--permutation-test` the presence of this flag indicates that the PC-wise permutation test should be performed. If absent, only the isotropic inflation factor will be estimated. Defaults to a fixed number of permutations. Use `--aperm` to use adaptive permutation procedure (see below). 
 
 - `--perm-pcs` the number of top PCs to be tested for the PC-wise permutation procedure. Defaults to the first 100 PCs. 
 
-- `--nperm` the number of permutations to perform for each PC-wise decomposition in constructing the permutation based null. Defaults to 1000 permutations. 
+- `--nperm` the number of permutations to perform for each PC-wise decomposition in constructing the permutation based null. Defaults to 1000 permutations.
+
+- `--aperm` boolean flag (default: False) that indicates whether or not to use the adaptive permutation procedure for PC-wise component tests.
+
+- `--aperm-alpha` threshold for significance in permutation testing used to establish stop conditions of adaptive permutations (default 0.1)
+
+- `--c` sensitivity paramter used to establish stop conditions of adaptive permutations, specifically number of necessary "successes" before stopping. 
 
 - `--outfile-label` file prefix for output files produced during the data munging. 
 
-- `--out` directory path where results should be written. 
+- `--out` directory path where results should be written.
+
+
