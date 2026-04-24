@@ -286,12 +286,12 @@ class block_permutation():
 			ranked_covar = (covar_vc_perm.loc[:nperm_covar[k]][k]/standard_decomp_perm.loc[:nperm_covar[k]].sum(axis = 1)).sort_values().reset_index(drop=True)
 			upper975_perm_covar[k] = ranked_covar.loc[int(nperm_covar[k]*0.975)]
 			lower025_perm_covar[k] = ranked_covar.loc[int(nperm_covar[k]*0.025)]
-			pvals_covar[k] = np.min([float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_covar), 1, 0))),float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_covar), 1, 0)))])
+			pvals_covar[k] = 2*np.min([float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_covar), 1, 0))),float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_covar), 1, 0)))])
 
 			ranked_nondirect = (nondirect_vc_perm.loc[:nperm_nondirect[k]][k]/standard_decomp_perm.loc[:nperm_nondirect[k]].sum(axis = 1)).sort_values().reset_index(drop=True)
 			upper975_perm_nondirect[k] = ranked_nondirect.loc[int(nperm_nondirect[k]*0.975)]
 			lower025_perm_nondirect[k] = ranked_nondirect.loc[int(nperm_nondirect[k]*0.025)]
-			pvals_nondirect[k] = np.min([float(np.mean(np.where((self.emp_nondirect_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_nondirect), 1, 0))),float(np.mean(np.where((self.emp_nondirect_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_nondirect), 1, 0)))])
+			pvals_nondirect[k] = 2*np.min([float(np.mean(np.where((self.emp_nondirect_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_nondirect), 1, 0))),float(np.mean(np.where((self.emp_nondirect_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_nondirect), 1, 0)))])
 
 		self.pvals_direct, self.pvals_sad, self.pvals_covar, self.pvals_nondirect, self.upper95_perm_direct, self.upper95_perm_sad, self.upper975_perm_covar, self.upper975_perm_nondirect, self.lower0_perm_direct, self.lower0_perm_sad, self.lower025_perm_covar, self.lower025_perm_nondirect, self.nperm_direct, self.nperm_sad, self.nperm_covar, self.nperm_nondirect = pvals_direct, pvals_sad, pvals_covar, pvals_nondirect, upper95_perm_direct, upper95_perm_sad, upper975_perm_covar, upper975_perm_nondirect, lower0_perm_direct, lower0_perm_sad, lower025_perm_covar, lower025_perm_nondirect, nperm_direct, nperm_sad, nperm_covar, nperm_nondirect
 
@@ -332,8 +332,8 @@ class block_permutation():
 
 			pvals_direct[k] = np.mean(np.where((self.emp_direct_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_direct), 1, 0))
 			pvals_sad[k] = np.mean(np.where((self.emp_sad_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_sad), 1, 0))
-			pvals_covar[k] = np.min([float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_covar), 1, 0))),float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_covar), 1, 0)))])
-			pvals_nondirect[k] = np.min([float(np.mean(np.where((self.emp_nondirect_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_nondirect), 1, 0))),float(np.mean(np.where((self.emp_nondirect_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_nondirect), 1, 0)))])
+			pvals_covar[k] = 2*np.min([float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_covar), 1, 0))),float(np.mean(np.where((self.emp_covar_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_covar), 1, 0)))])
+			pvals_nondirect[k] = 2*np.min([float(np.mean(np.where((self.emp_nondirect_vc[k]/np.sum(self.emp_standard_decomp)) <= np.array(ranked_nondirect), 1, 0))),float(np.mean(np.where((self.emp_nondirect_vc[k]/np.sum(self.emp_standard_decomp)) >= np.array(ranked_nondirect), 1, 0)))])
 
 		self.pvals_direct, self.pvals_sad, self.pvals_covar, self.pvals_nondirect, self.upper95_perm_direct, self.upper95_perm_sad, self.upper975_perm_covar, self.upper975_perm_nondirect, self.lower0_perm_direct, self.lower0_perm_sad, self.lower025_perm_covar, self.lower025_perm_nondirect = pvals_direct, pvals_sad, pvals_covar, pvals_nondirect, upper95_perm_direct, upper95_perm_sad, upper975_perm_covar, upper975_perm_nondirect, lower0_perm_direct, lower0_perm_sad, lower025_perm_covar, lower025_perm_nondirect
 		

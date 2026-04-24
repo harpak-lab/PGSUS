@@ -35,7 +35,7 @@ from datetime import datetime
 ################################################################################################
 
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 MASTHEAD = "\n*********************************************************************************\n"
 MASTHEAD += "* PGSUS\n"
 MASTHEAD += "* SAD variance decomposition for polygenic scores\n"

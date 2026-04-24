@@ -32,8 +32,7 @@ class estimate_components(object):
         self.pcs_to_test = pcs_to_test
         self.outlabel = outlabel
         self.plot = 0
-
-        #if pc_genotypes != '':
+        
         if eigenvalues is not None and type(eigenvalues) == str:
             self.eigenvalues = np.load(eigenvalues, allow_pickle = True)
             self.eigenvecs = np.load(eigenvecs, allow_pickle = True)
@@ -47,7 +46,8 @@ class estimate_components(object):
         self.pc_upper_bound = self.eigenvalues.shape[0]
         self.direct_variance_component_init, self.sad_variance_component_init, self.covar_variance_component_init, self.decomp_gwas, self.decomp_sib, self.decomp_diff, self.gwas_avg_se2,self.sib_avg_se2, self.proj_gwas, self.proj_sib, self.proj_diff, self.variance_direct_vc, self.variance_sad_vc, self.variance_covar_vc, self.variance_nondirect_vc, self.standard_variance_component, self.gwas_beta_threshed, self.gwas_se_threshed, self.sib_beta_threshed, self.sib_se_threshed, self.beta_sum, self.alpha, self.alpha_se, self.vartotals_init, self.tau, self.nondirect_variance_component = self.estimate_components_and_alpha(self.gwas_beta, self.gwas_se,self.sib_beta,self.sib_se,self.ascertainment_p, self.thresh,self.eigenvecs, self.eigenvalues, 1, 1, self.pc_upper_bound, pc_lower_bound = self.pc_lower_bound)
         self.alpha_report = self.alpha
-
+        self.vartotals_init.to_csv(self.outpath + '/' + self.outlabel + 'pval.' + str(thresh) + '.precorrection.variance_proportions.csv')
+        
         self.gwas_beta = gwas_beta.reset_index(drop = True)
         self.gwas_se = gwas_se.reset_index(drop = True)
         self.sib_beta = sib_beta.reset_index(drop = True)*self.alpha_report
@@ -173,33 +173,16 @@ class estimate_components(object):
 
         startdf = np.vstack((standard_variance_component,direct_variance_component,variance_standard_vc,variance_sib_vc))
         lmdf = pd.DataFrame(data=startdf, index = ['standard_vc','sib_vc','var_standard_vc','var_sib_vc']).T
-        # print('initial stats')
-        # print(lmdf.mean(axis = 0))
-        # print(lmdf.sum(axis=0))
-        # print(direct_variance_component.sum(), standard_variance_component.sum())
 
         lmdf = lmdf.astype(float)
         lmdf = lmdf.iloc[pc_lower_bound:pc_upper_bound]
         linear = Model(self.f)
         mydata = RealData(x=lmdf['sib_vc'],y=lmdf['standard_vc'],sx = lmdf['var_sib_vc'], sy = lmdf['var_standard_vc'])
-        # print(lmdf.mean(axis = 0))
-        # print(lmdf.sum(axis=0))
-        # print(direct_variance_component[pc_lower_bound:].sum(), standard_variance_component[pc_lower_bound:].sum())
+
         myodr = ODR(mydata, linear, beta0 = [0.])
         myoutput = myodr.run()
-        alpha = np.sqrt(np.abs(myoutput.beta[0]))
+        alpha = np.sign(myoutput.beta[0])*np.sqrt(np.abs(myoutput.beta[0]))
         alpha_se = self.se_bootstrapper(lmdf)
-        # print(myoutput.beta[0], alpha, alpha_se)
-        # fig, ax = plt.subplots()
-        # ax.scatter(lmdf['sib_vc'], lmdf['standard_vc'])
-        # x = np.linspace(lmdf['sib_vc'].min(), lmdf['sib_vc'].max(), 100)
-        # ax.plot(x, myoutput.beta[0]*x, color = 'red')
-        # ax.set_xlabel('Sib variance component')
-        # ax.set_ylabel('Standard variance component')
-        # plt.savefig('./' + self.outlabel + '.odr.plot.png')
-        # plt.close()
-        # plt.clf()
-        # sys.exit()
 
         # ALL PCs
         var_props_all_pcs = np.array([np.sum(direct_variance_component)/np.sum(decomp_gwas),
