@@ -33,7 +33,7 @@ plink1.9 --bfile reference_population
 --clump-p1 1
 --clump-p2 1
 --clump-r2 0.1
---clump-kb 100
+--clump-kb 250
 --memory 16000
 --out gwas.results.clumped
 ```
