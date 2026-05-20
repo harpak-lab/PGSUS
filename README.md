@@ -156,9 +156,9 @@ Possible flags include:
 
 - `--aperm` boolean flag (default: False) that indicates whether or not to use the adaptive permutation procedure for PC-wise component tests.
 
-- `--aperm-alpha` threshold for significance in permutation testing used to establish stop conditions of adaptive permutations (default 0.1)
+- `--aperm-alpha` threshold for significance in permutation testing used to establish stop conditions of adaptive permutations. Default is 0.05.
 
-- `--c` sensitivity paramter used to establish stop conditions of adaptive permutations, specifically number of necessary "successes" before stopping. 
+- `--c` sensitivity paramter used to establish stop conditions of adaptive permutations, specifically number of necessary "successes" before stopping. Default is 0.1.
 
 - `--outfile-label` file prefix for output files produced during the data munging. 
 
