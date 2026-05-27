@@ -87,8 +87,6 @@ class make_input_files(object):
 			self.pop_gwas = pd.read_csv(self.pop_gwas_file_name, sep='\t', compression = 'gzip')
 		else:
 			self.pop_gwas = pd.read_csv(self.pop_gwas_file_name, sep='\t')
-		# print(self.pop_gwas.head(2))
-		# exit()
 		
 		if '.gz' in self.sib_gwas_file_name:
 			self.sib_gwas = pd.read_csv(self.sib_gwas_file_name, delim_whitespace = True, compression = 'gzip')
@@ -104,14 +102,12 @@ class make_input_files(object):
 		print(f"{sib_gwas_total} variants loaded from sibling GWAS.")
 
 		self.sib_gwas = self.sib_gwas.drop_duplicates(subset = ['SNP'])
-		# print(f"LINE 83 sibgwas: {self.sib_gwas.shape}")
 		self.pop_gwas = self.pop_gwas.drop_duplicates(subset = ['SNP'])
-		# print(f"LINE 85 popgwas: {self.pop_gwas.shape}")
 
 		self.sib_gwas = self.sib_gwas.dropna()
 		self.pop_gwas = self.pop_gwas.dropna()
-		print(f"{len(self.pop_gwas) - pop_gwas_total} variants removed as NA or duplicates from population GWAS.")
-		print(f"{len(self.sib_gwas) - sib_gwas_total} variants removed as NA or duplicates from sibling GWAS.")
+		print(f"{pop_gwas_total - len(self.pop_gwas)} variants removed as NA or duplicates from population GWAS.")
+		print(f"{sib_gwas_total - len(self.sib_gwas)} variants removed as NA or duplicates from sibling GWAS.")
 
 		self.sib_gwas = self.sib_gwas.dropna()
 		self.pop_gwas = self.pop_gwas.dropna()
@@ -138,17 +134,12 @@ class make_input_files(object):
 		self.pop_gwas = self.pop_gwas.merge(relevant_anc, on = 'SNP', how = 'inner')
 		self.sib_gwas = self.sib_gwas.merge(relevant_anc, on = 'SNP', how = 'inner')
 		matcher = self.sib_gwas[['SNP']].merge(self.pop_gwas[['SNP']], on = 'SNP', how = 'inner')
-		# print(f"LINE 113 sib x pop x relevant_anc: {matcher.shape}")
 		self.pop_gwas = self.pop_gwas[self.pop_gwas['SNP'].isin(matcher['SNP'])].drop_duplicates(subset = ['SNP'])
-		# print(f"LINE 115 pop x matcher: {self.pop_gwas.shape}")
 		self.sib_gwas = self.sib_gwas[self.sib_gwas['SNP'].isin(matcher['SNP'])].drop_duplicates(subset = ['SNP'])
-		# print(f"LINE 117 sib x matcher: {self.sib_gwas.shape}")
 		self.pop_gwas = self.pop_gwas.reset_index(drop=True)
 		self.sib_gwas = self.sib_gwas.reset_index(drop=True)
 		self.pop_gwas = self.pop_gwas[self.pop_gwas['SNP'].isin(matcher['SNP'])].drop_duplicates(subset = ['SNP'])
 		self.sib_gwas = self.sib_gwas[self.sib_gwas['SNP'].isin(matcher['SNP'])].drop_duplicates(subset = ['SNP'])
-		# print(f"LINE 123 pop nodup: {self.pop_gwas.shape}")
-		# print(f"LINE 124 sib nodup: {self.sib_gwas.shape}")
 
 		self.pop_gwas['effect_matches'] = (self.pop_gwas[self.alt_allele]==self.pop_gwas['alt.allele']).astype(int)
 		self.pop_gwas['effect_matches'] = 2*(self.pop_gwas['effect_matches']) - 1
@@ -173,9 +164,6 @@ class make_input_files(object):
 			self.sib_gwas = self.sib_gwas[self.sib_gwas['SNP'].isin(self.pop_gwas['SNP'].tolist())].drop_duplicates()
 			self.pop_gwas = self.pop_gwas.reset_index(drop=True)
 			self.sib_gwas = self.sib_gwas.reset_index(drop=True)
-			# print(f"LINE 148 pop nodup: {self.pop_gwas.shape}")
-			# print(f"LINE 149 sib nodup: {self.sib_gwas.shape}")
-			# sys.exit()
 
 		elif preselected_snp_ids.shape[0] > 1:
 			val = preselected_snp_ids.drop_duplicates(subset = ["SNP"]).shape
@@ -184,9 +172,7 @@ class make_input_files(object):
 		
 			self.pop_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
 			self.sib_gwas = self.sib_gwas.merge(preselected_snp_ids, on = 'SNP', how = 'inner')
-			# print(f"LINE 159 sib x pssnp: {self.sib_gwas.shape}")
 			merged = self.pop_gwas.merge(self.sib_gwas, on = 'SNP', how = 'inner')
-			# print(f"LINE 161 pop x snp x pssnp: {merged.shape}")
 			self.pop_gwas = self.pop_gwas.loc[self.pop_gwas['SNP'].isin(merged['SNP'])]
 			self.sib_gwas = self.sib_gwas[self.sib_gwas['SNP'].isin(merged['SNP'])]
 			self.pop_gwas = self.pop_gwas.reset_index(drop=True)
@@ -195,9 +181,6 @@ class make_input_files(object):
 			self.clump_gwas = self.pop_gwas[[self.chr_label, 'SNP', self.pos_label, alt_allele, self.standard_beta, pval]]
 			self.clump_gwas = self.clump_gwas.drop_duplicates(subset = 'SNP')
 			self.clump_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
-			# print(f"LINE 170 pop nodup: {self.pop_gwas.shape}")
-			# print(f"LINE 171 sib nodup: {self.sib_gwas.shape}")
-			# sys.exit()
 
 		else:
 			#first make sure that the alternative allele is set to be the same as in the 1kg data
