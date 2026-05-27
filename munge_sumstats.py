@@ -4,11 +4,11 @@ import time, sys, traceback, argparse
 import os, subprocess
 from scipy import stats
 import warnings
+from datetime import datetime
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--bfile", type=str, default = 'support_files/eur_1000G.noduplicates.maf01.snpsonly', dest = 'genetic_file')
 parser.add_argument("--anc-data", type=str, default = 'support_files/SNPalleles_1000Genomes_allsites.txt.gz', dest = 'ancdata')
 parser.add_argument("--pop-gwas-file", type=str, default = './', dest = 'popgwas')
 parser.add_argument("--sib-perm-file", type=str, default = './', dest = 'sibgwasperm')
@@ -26,7 +26,6 @@ parser.add_argument('--p-is-log', default=False, action=argparse.BooleanOptional
 parser.add_argument('--logp-col', default=None, dest = 'logp_col', type = str)
 
 args = parser.parse_args()
-genetic_file = args.genetic_file
 popgwas = args.popgwas
 sibgwasperm = args.sibgwasperm
 outdir = args.outdir
@@ -46,10 +45,6 @@ logp_col = args.logp_col
 
 class make_input_files(object):
 
-<<<<<<< Updated upstream
-	def __init__(self, outdir, outlabel, pop_gwas_file, sib_gwas_perm_file, genetic_file, anc_data, 
-		chr_label, pos_label, snpid, alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset = None):
-=======
 	def __init__(self, outdir, outlabel, pop_gwas_file, sib_gwas_perm_file, anc_data, 
 		chr_label, pos_label, snpid, alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset = None): # genetic_file, 
 
@@ -58,12 +53,11 @@ class make_input_files(object):
 		for f in file_list:
 			if os.path.exists(f) == False:
 				raise FileNotFoundError(f'{f} does not exist or could not be opened.')
->>>>>>> Stashed changes
 
 		self.pop_gwas_file_name = pop_gwas_file
 		self.sib_gwas_file_name = sib_gwas_perm_file
-		self.anc_data = pd.read_csv(anc_data,sep = '\t',compression='infer')
-		self.genetic_file = genetic_file
+		self.anc_data_file_name = anc_data
+		self.anc_data = pd.read_csv(anc_data, sep = '\t', compression='infer')
 		self.standard_beta = standard_beta
 		self.sib_beta = sib_beta
 		self.log10p = log10p
@@ -74,6 +68,20 @@ class make_input_files(object):
 		self.snpid = snpid
 		self.alt_allele = alt_allele
 		self.logp_col = logp_col
+
+		print(f"[args] Population GWAS file: {self.pop_gwas_file_name}")
+		print(f"[args] Sibling GWAS file: {self.sib_gwas_file_name}")
+		print(f"[args] Reference allele file: {self.anc_data_file_name}")
+		print(f"[args] Output directory: {self.outdir}")
+		print(f"[args] Output file stem: {self.outlabel}")
+		print(f"[args] Effect allele columns: {self.alt_allele}")
+		print(f"[args] Population GWAS effect column: {self.standard_beta}")
+		print(f"[args] Sibling GWAS effect column: {self.sib_beta}")
+		if self.log10p == True:
+			print("[args] --p-is-log: ON")
+			print(f"[args] log10p column: {self.logp_col}")
+
+		print(f"\nMunge sumstats began at {datetime.now()}")
 
 		if '.gz' in self.pop_gwas_file_name:
 			self.pop_gwas = pd.read_csv(self.pop_gwas_file_name, sep='\t', compression = 'gzip')
@@ -86,50 +94,45 @@ class make_input_files(object):
 			self.sib_gwas = pd.read_csv(self.sib_gwas_file_name, delim_whitespace = True)
 		
 		self.pop_gwas = self.pop_gwas.rename(columns = {snpid:'SNP'})
+		pop_gwas_total = len(self.pop_gwas)
+		print(f"{pop_gwas_total} variants loaded from population GWAS.")
+
 		self.sib_gwas = self.sib_gwas.rename(columns = {snpid:'SNP'})
+		sib_gwas_total = len(self.sib_gwas)
+		print(f"{sib_gwas_total} variants loaded from sibling GWAS.")
 
 		self.sib_gwas = self.sib_gwas.drop_duplicates(subset = ['SNP'])
 		self.pop_gwas = self.pop_gwas.drop_duplicates(subset = ['SNP'])
 
 		self.sib_gwas = self.sib_gwas.dropna()
 		self.pop_gwas = self.pop_gwas.dropna()
-<<<<<<< Updated upstream
-=======
 		print(f"{pop_gwas_total - len(self.pop_gwas)} variants removed as NA or duplicates from population GWAS.")
 		print(f"{sib_gwas_total - len(self.sib_gwas)} variants removed as NA or duplicates from sibling GWAS.")
 
 		self.sib_gwas = self.sib_gwas.dropna()
 		self.pop_gwas = self.pop_gwas.dropna()
->>>>>>> Stashed changes
 		
 		if snpset:
 			snpset = pd.read_csv(snpset, header = None)
 			snpset.columns = ['SNP']
+			print(f"{len(snpset)} variants loaded from preselected SNP file.")
 		else:
 			snpset = pd.DataFrame(np.zeros((1,2)))
 		
 		self.check_shared_snps(snpset)
-
-	def extract_and_clump(self):
-		
-		if os.path.isfile(self.outdir + '/' + self.outlabel + '.PRS.clumps.snp'):
-			pass
-		else:
-			os.system('PRSice_linux --base ' + outdir + '/' + self.outlabel + '.support.overlap.linear --a1 ' + self.alt_allele + ' --beta --pvalue ' + pval + ' --snp SNP --target ' + self.genetic_file + ' --bar-levels 1 --fastscore --no-regress --clump-r2 0.1 --clump-kb 100 --print-snp --out ' + self.outdir + '/' + self.outlabel + '.PRS.clumps')
-			os.system("""awk 'NR!=1 {print $2}' """ + self.outdir + """/""" + self.outlabtl + """.PRS.clumps.snp > """ + self.outdir +"""/""" + self.outlabel + """.clumped.snps.txt""")
-
+	
 	def check_alt_consensus(self):
-		# self.anc_data['SNP'] = self.anc_data['CHR'].astype(str) + ':' + self.anc_data['POS'].astype(str)
 		relevant_anc = self.anc_data[['SNP','alt.allele']]
+		print(f"{len(relevant_anc)} variants loaded from ancestral data file.")
 
-		#check effects for to make sure that the alternative allele matches between the summary statistics and the target cohort
+		# Check effects for to make sure that the alternative allele matches between the summary statistics and the target cohort
 		self.pop_gwas = self.pop_gwas.merge(relevant_anc, on = 'SNP', how = 'inner')
+		self.sib_gwas = self.sib_gwas.merge(relevant_anc, on = 'SNP', how = 'inner')
 		matcher = self.sib_gwas[['SNP']].merge(self.pop_gwas[['SNP']], on = 'SNP', how = 'inner')
 		self.pop_gwas = self.pop_gwas[self.pop_gwas['SNP'].isin(matcher['SNP'])].drop_duplicates(subset = ['SNP'])
 		self.sib_gwas = self.sib_gwas[self.sib_gwas['SNP'].isin(matcher['SNP'])].drop_duplicates(subset = ['SNP'])
 		self.pop_gwas = self.pop_gwas.reset_index(drop=True)
 		self.sib_gwas = self.sib_gwas.reset_index(drop=True)
-
 		self.pop_gwas = self.pop_gwas[self.pop_gwas['SNP'].isin(matcher['SNP'])].drop_duplicates(subset = ['SNP'])
 		self.sib_gwas = self.sib_gwas[self.sib_gwas['SNP'].isin(matcher['SNP'])].drop_duplicates(subset = ['SNP'])
 
@@ -153,15 +156,15 @@ class make_input_files(object):
 			self.pop_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
 			self.pop_gwas = self.pop_gwas[self.pop_gwas['SNP'].isin(clumped_snps['SNP'].tolist())].drop_duplicates()
 			self.sib_gwas['ID'] = self.sib_gwas['CHR'].astype(str) + ':' + self.sib_gwas['SNP'].astype(str)
-			# self.sib_gwas['SNP'] = self.sib_gwas['CHR'].astype(str) + ':' + self.sib_gwas['BP'].astype(str)
 			self.sib_gwas = self.sib_gwas[self.sib_gwas['SNP'].isin(self.pop_gwas['SNP'].tolist())].drop_duplicates()
 			self.pop_gwas = self.pop_gwas.reset_index(drop=True)
 			self.sib_gwas = self.sib_gwas.reset_index(drop=True)
 
 		elif preselected_snp_ids.shape[0] > 1:
+			val = preselected_snp_ids.drop_duplicates(subset = ["SNP"]).shape
 			self.pop_gwas = self.pop_gwas.drop_duplicates(subset = ['SNP'])
-
 			self.pop_gwas = self.pop_gwas.merge(preselected_snp_ids, on = 'SNP', how = 'inner')
+		
 			self.pop_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
 			self.sib_gwas = self.sib_gwas.merge(preselected_snp_ids, on = 'SNP', how = 'inner')
 			merged = self.pop_gwas.merge(self.sib_gwas, on = 'SNP', how = 'inner')
@@ -173,7 +176,6 @@ class make_input_files(object):
 			self.clump_gwas = self.pop_gwas[[self.chr_label, 'SNP', self.pos_label, alt_allele, self.standard_beta, pval]]
 			self.clump_gwas = self.clump_gwas.drop_duplicates(subset = 'SNP')
 			self.clump_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
-
 
 		else:
 			#first make sure that the alternative allele is set to be the same as in the 1kg data
@@ -192,11 +194,7 @@ class make_input_files(object):
 			self.clump_gwas = self.clump_gwas.drop_duplicates(subset = 'SNP')
 			self.clump_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
 			#extract the consensus from the provided 1kg file and clump them agnostic to p-value
-<<<<<<< Updated upstream
-			self.extract_and_clump()
-=======
 			# self.extract_and_clump()
->>>>>>> Stashed changes
 
 			#read in the resulting SNPs from each clump
 			clumped_snps = pd.read_csv(self.outdir + '/' + self.outlabel + '.clumped.snps.txt',sep = '\t', header = None)
@@ -214,6 +212,15 @@ class make_input_files(object):
 		if self.log10p:
 			self.pop_gwas['P'] = 10**(-1.0*self.pop_gwas[self.logp_col])
 
+		if len(self.pop_gwas) < 1:
+			raise RuntimeError("ERROR: No SNPs passed filtering and munging for population GWAS.")
+		else:
+			print(f"{len(self.pop_gwas)} variants remain in population GWAS after filtering and merging.")
+		if len(self.sib_gwas) < 1:
+			raise RuntimeError("ERROR: No SNPs passed filtering and munging for sibling GWAS.")
+		else:
+			print(f"{len(self.sib_gwas)} variants remain in sibling GWAS after filtering and merging.")
+
 		self.pop_gwas.to_csv(self.outdir + '/' + self.outlabel + '.standard.preproc.txt', sep = '\t', index = False)
 		siblabel = self.sib_gwas_file_name.replace('.gz','')
 		siblabel = self.sib_gwas_file_name.replace('.txt.gz','')
@@ -221,14 +228,6 @@ class make_input_files(object):
 		self.sib_gwas.to_csv(self.outdir + '/' + self.outlabel + '.sib.preproc.txt', sep = '\t', index = False)
 
 if __name__ == '__main__':
-<<<<<<< Updated upstream
-	x = make_input_files(outdir, outlabel, popgwas, sibgwasperm, genetic_file, ancdata, chrom, pos, snpid,
-	 alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset)
-	print('Munge complete.')
-
-
-=======
 	x = make_input_files(outdir, outlabel, popgwas, sibgwasperm, ancdata, chrom, pos, snpid,
 	 alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset) # genetic_file, 
 	print(f'Munge complete at {datetime.now()}.\n')
->>>>>>> Stashed changes
