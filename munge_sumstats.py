@@ -46,10 +46,10 @@ logp_col = args.logp_col
 class make_input_files(object):
 
 	def __init__(self, outdir, outlabel, pop_gwas_file, sib_gwas_perm_file, anc_data, 
-		chr_label, pos_label, snpid, alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset = None): # genetic_file, 
+		chr_label, pos_label, snpid, alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset = None): 
 
 		# Check for all files before beginning the analysis
-		file_list = [pop_gwas_file, sib_gwas_perm_file, anc_data] #, genetic_file]
+		file_list = [pop_gwas_file, sib_gwas_perm_file, anc_data] 
 		for f in file_list:
 			if os.path.exists(f) == False:
 				raise FileNotFoundError(f'{f} does not exist or could not be opened.')
@@ -145,9 +145,7 @@ class make_input_files(object):
 		self.pop_gwas['effect_matches'] = 2*(self.pop_gwas['effect_matches']) - 1
 		self.pop_gwas['effect_matches'] = self.pop_gwas['effect_matches'].astype(float)
 		self.pop_gwas['beta.altconsensus'] = self.pop_gwas[self.standard_beta].astype(float) * self.pop_gwas['effect_matches']
-		self.sib_gwas['effect_matches'] = (self.sib_gwas[self.alt_allele]==self.sib_gwas['alt.allele']).astype(int)
-		self.sib_gwas['effect_matches'] = 2*(self.sib_gwas['effect_matches']) - 1
-		self.sib_gwas['effect_matches'] = self.sib_gwas['effect_matches']
+		self.sib_gwas['effect_matches'] = self.pop_gwas['effect_matches']
 		self.sib_gwas['beta.altconsensus'] = self.sib_gwas[self.sib_beta].astype(float) * self.sib_gwas['effect_matches']
 
 	def check_shared_snps(self, preselected_snp_ids):
@@ -198,8 +196,6 @@ class make_input_files(object):
 			self.clump_gwas = self.pop_gwas[[self.chr_label,'SNP','BP', 'A1', 'BETA',pval]]
 			self.clump_gwas = self.clump_gwas.drop_duplicates(subset = 'SNP')
 			self.clump_gwas.to_csv(self.outdir + '/' + self.outlabel + '.support.overlap.linear', index = False, sep = '\t')
-			#extract the consensus from the provided 1kg file and clump them agnostic to p-value
-			# self.extract_and_clump()
 
 			#read in the resulting SNPs from each clump
 			clumped_snps = pd.read_csv(self.outdir + '/' + self.outlabel + '.clumped.snps.txt',sep = '\t', header = None)
@@ -207,7 +203,6 @@ class make_input_files(object):
 			self.pop_gwas = self.pop_gwas.merge(clumped_snps, on = 'SNP', how = 'inner').drop_duplicates()
 			self.sib_gwas = self.sib_gwas.reset_index(drop = True)
 			self.sib_gwas = self.sib_gwas[self.sib_gwas['SNP'].isin(self.pop_gwas['SNP'].tolist())]
-
 					
 		self.pop_gwas = self.pop_gwas.rename(columns={'SE':'se'})
 		
@@ -234,5 +229,5 @@ class make_input_files(object):
 
 if __name__ == '__main__':
 	x = make_input_files(outdir, outlabel, popgwas, sibgwasperm, ancdata, chrom, pos, snpid,
-	 alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset) # genetic_file, 
+	 alt_allele, standard_beta, sib_beta, log10p, logp_col, snpset)
 	print(f'Munge complete at {datetime.now()}.\n')
