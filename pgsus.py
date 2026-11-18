@@ -222,7 +222,7 @@ if __name__ == '__main__':
 
 	log.log('Done.\n')
 	#subset the population gwas results to just the sites that are in the target genotype data
-	if genetic_file != './': 
+	if (genetic_file != './') & (eigenvalues == None) & (eigenvecs == None): 
 		log.log('Reading target sample genotypes...')
 		genotypes = Bed(genetic_file, count_A1 = True)
 		loci = ['%g'%(y[0]) + ':' + str(y[2])[:-2] for y in genotypes.pos]
@@ -240,9 +240,9 @@ if __name__ == '__main__':
 		pc_genotypes = np.delete(pc_genotypes, snps_nans, 1)
 		statsnps = np.delete(statsnps,snps_nans,0)
 		popgwas = popgwas.drop(snps_nans)
-		popgwas = popgwas.reset_index(drop = True)
+		# popgwas = popgwas.reset_index(drop = True)
 		sibgwas = sibgwas.drop(snps_nans)
-		sibgwas = sibgwas.reset_index(drop = True)
+		# sibgwas = sibgwas.reset_index(drop = True)
 	else:
 		pc_genotypes = ''
 	block_snps = popgwas[[CHR, POS, POP_P]]
